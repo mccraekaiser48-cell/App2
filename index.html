@@ -1125,9 +1125,26 @@ html[data-wall="graphite"] .wallpaper {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.brave-view { position: relative; flex: 1; min-height: 0; background: #101010; }
+.brave-view { position: relative; flex: 1; min-height: 0; background: #101010; overflow: hidden; }
 .brave-view iframe { display: block; width: 100%; height: 100%; border: 0; background: #101010; }
 .brave-view iframe[hidden] { display: none; }
+.brave-alert {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  max-width: min(520px, calc(100% - 32px));
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--acrylic);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  backdrop-filter: blur(30px) saturate(150%);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+}
+.brave-alert[hidden] { display: none; }
+.brave-alert p { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--text-2); }
 .brave-empty {
   position: absolute;
   inset: 0;
@@ -1158,7 +1175,23 @@ html[data-wall="graphite"] .wallpaper {
   outline: none;
 }
 .brave-empty .stream-url:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.brave-empty textarea.stream-url {
+  height: auto;
+  min-height: 78px;
+  padding: 8px 12px;
+  line-height: 1.55;
+  font-family: inherit;
+  resize: vertical;
+}
 .brave-hint { margin-top: 16px !important; font-size: 11.5px !important; color: var(--text-3) !important; }
+.brave-error {
+  margin: 10px 0 0 !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  color: #c42b1c !important;
+  max-width: 60ch;
+}
+.brave-error[hidden] { display: none; }
 
 </style>
 </head>
@@ -1261,8 +1294,17 @@ html[data-wall="graphite"] .wallpaper {
 // With a URL here, the desktop opens the Brave Origin app on the streamed Brave,
 // so the whole thing is a single link with no pasting. Leave it empty and Brave
 // Origin asks for the address once, storing it in this browser.
+//
+// streamUrls holds extra addresses for the same stream. School and work networks
+// block by hostname, so a link that works at home can be dead at school; the app
+// shows a "Next stream source" button when more than one is listed, and warns
+// when an address stops answering. Put different tunnel providers in here — a
+// new random name on the same provider will be blocked exactly like the old one.
 window.NIMBUS_CONFIG = {
   streamUrl: 'https://photographic-duration-palestinian-ipod.trycloudflare.com/',
+
+  // e.g. ['https://abcd.lhr.life/', 'https://efgh.a.free.pinggy.link/']
+  streamUrls: [],
 
   // Open the Brave Origin app on startup when streamUrl is set above.
   autoOpenBrowser: true,
@@ -1708,6 +1750,8 @@ __defs['apps/brave.js'] = function (__exports, __req) {
       '<svg viewBox="0 0 24 24" class="icon"><path d="M14 4h6v6M20 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     stream:
       '<svg viewBox="0 0 24 24" class="icon"><rect x="2.5" y="4.5" width="19" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 20h8M12 16.5V20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M9.5 12.2a4 4 0 0 1 5 0M7.6 9.8a7 7 0 0 1 8.8 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    swap:
+      '<svg viewBox="0 0 24 24" class="icon"><path d="M4 8h13l-3.2-3.2M20 16H7l3.2 3.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
 
   defineApp({
@@ -1727,24 +1771,34 @@ __defs['apps/brave.js'] = function (__exports, __req) {
           <div class="brave-bar">
             <button type="button" class="browser-btn" data-act="reload" title="Reload the stream">${GLYPH.reload}</button>
             <div class="brave-url" data-url>Not connected</div>
+            <button type="button" class="browser-btn" data-act="source" title="Next stream source" hidden>${GLYPH.swap}</button>
             <button type="button" class="browser-btn" data-act="setup" title="Stream address">${GLYPH.stream}</button>
             <button type="button" class="browser-btn" data-act="external" title="Open the stream in a real tab">${GLYPH.external}</button>
           </div>
           <div class="brave-view">
             <iframe data-frame title="Brave Origin"
               allow="clipboard-read; clipboard-write; fullscreen; autoplay; encrypted-media"></iframe>
+            <div class="brave-alert" data-alert hidden>
+              <p data-alert-text></p>
+              <div class="row">
+                <button type="button" class="btn primary" data-act="alert-next">Try another source</button>
+                <button type="button" class="btn" data-act="alert-retry">Retry</button>
+              </div>
+            </div>
             <div class="brave-empty" data-empty hidden>
               <h3>Brave Origin</h3>
               <p>This window shows the real Brave Origin running on your phone, streamed over a
-                Cloudflare tunnel. Paste the tunnel link — the one ending in
-                <code>vnc.html?autoconnect=true&amp;resize=remote</code> — and it opens here.</p>
-              <input class="stream-url" data-input type="url" spellcheck="false"
-                placeholder="https://random-words.trycloudflare.com/vnc.html?autoconnect=true&amp;resize=remote">
+                tunnel. Paste one address per line — different tunnel providers, so a network
+                that blocks one still has another.</p>
+              <textarea class="stream-url" data-input rows="3" spellcheck="false"
+                placeholder="https://photographic-duration-palestinian-ipod.trycloudflare.com/&#10;https://abcd.lhr.life/"></textarea>
               <div class="row" style="margin-top:12px">
                 <button type="button" class="btn primary" data-act="save">Connect</button>
                 <button type="button" class="btn" data-act="cancel">Cancel</button>
               </div>
-              <p class="brave-hint">The address changes every time the phone restarts the tunnel.</p>
+              <p class="brave-error" data-error hidden></p>
+              <p class="brave-hint">Cloudflare quick tunnels change their address every time the phone
+                restarts one. Extra addresses are used by the “Next stream source” button.</p>
             </div>
           </div>
         </div>`;
@@ -1753,6 +1807,10 @@ __defs['apps/brave.js'] = function (__exports, __req) {
       const urlText = win.body.querySelector('[data-url]');
       const empty = win.body.querySelector('[data-empty]');
       const input = win.body.querySelector('[data-input]');
+      const alert = win.body.querySelector('[data-alert]');
+      const alertText = win.body.querySelector('[data-alert-text]');
+      const errorText = win.body.querySelector('[data-error]');
+      const swapBtn = win.body.querySelector('[data-act="source"]');
 
       // noVNC needs to be told to fit the framebuffer to the frame. resize=scale
       // does that locally and always works; resize=remote depends on an x11vnc
@@ -1773,6 +1831,19 @@ __defs['apps/brave.js'] = function (__exports, __req) {
         }
       }
 
+      // The remote client only sends what it thinks changed, so a stream that was
+      // resized or interrupted can keep stale black regions on screen. Forcing a
+      // fresh load (unique query string) makes it redraw everything.
+      function withNonce(url) {
+        try {
+          const parsed = new URL(url);
+          parsed.searchParams.set('r', String(Date.now()));
+          return parsed.toString();
+        } catch {
+          return url;
+        }
+      }
+
       function hostOf(url) {
         try {
           return new URL(url).host;
@@ -1781,20 +1852,80 @@ __defs['apps/brave.js'] = function (__exports, __req) {
         }
       }
 
-      function connect(url) {
-        if (!url) return showSetup(true);
-        url = normalizeStream(url);
+      // School and work networks routinely block a hostname, a tunnel provider, or
+      // long-lived WebSockets. Keeping several candidate addresses means a blocked
+      // source is one click away from a working one instead of a dead app.
+      function sourceList() {
+        const cfg = (typeof window !== 'undefined' && window.NIMBUS_CONFIG) || {};
+        const list = [];
+        const push = (candidate) => {
+          if (typeof candidate !== 'string') return;
+          const trimmed = candidate.trim();
+          if (!/^https?:\/\//i.test(trimmed)) return;
+          const normalised = normalizeStream(trimmed);
+          if (!list.includes(normalised)) list.push(normalised);
+        };
+        // A list the user typed wins outright: it is their set of addresses, and
+        // mixing it with the baked-in default would resurrect a dead tunnel.
+        if (Array.isArray(prefs.streamUrls) && prefs.streamUrls.length) {
+          prefs.streamUrls.forEach(push);
+          return list;
+        }
+        if (prefs.streamUrl) push(prefs.streamUrl);
+        if (Array.isArray(cfg.streamUrls)) cfg.streamUrls.forEach(push);
+        push(cfg.streamUrl);
+        return list;
+      }
+
+      let active = 0;
+      let watchdog = 0;
+      let startedAt = 0;
+
+      function clearAlert() {
+        alert.hidden = true;
+      }
+
+      function showAlert(message) {
+        alertText.textContent = message;
+        alert.hidden = false;
+      }
+
+      // A blocked address usually fails before any HTML arrives, and the frame then
+      // shows the browser's own error page, which looks like a broken app. Timing
+      // out and offering the next source keeps that from being a dead end.
+      function watchSource(url, count) {
+        clearTimeout(watchdog);
+        watchdog = setTimeout(() => {
+          showAlert(`${hostOf(url)} is not answering. This network may be blocking it.`);
+          win.setTitle(`Brave Origin — no response (${active + 1}/${count})`);
+        }, 15000);
+      }
+
+      function connect(index) {
+        const list = sourceList();
+        if (!list.length) return showSetup(true);
+        active = ((index % list.length) + list.length) % list.length;
+        const url = list[active];
         empty.hidden = true;
         frame.hidden = false;
-        frame.src = url;
-        urlText.textContent = hostOf(url);
+        clearAlert();
+        startedAt = Date.now();
+        watchSource(url, list.length);
+        frame.src = withNonce(url);
+        swapBtn.hidden = list.length < 2;
+        urlText.textContent = list.length > 1
+          ? `${hostOf(url)}  (${active + 1}/${list.length})`
+          : hostOf(url);
         win.setTitle(`Brave Origin — ${hostOf(url)}`);
       }
 
       function showSetup(selectText) {
         empty.hidden = false;
         frame.hidden = true;
-        input.value = prefs.streamUrl || '';
+        const saved = Array.isArray(prefs.streamUrls) && prefs.streamUrls.length
+          ? prefs.streamUrls
+          : [prefs.streamUrl].filter(Boolean);
+        input.value = saved.join('\n');
         urlText.textContent = prefs.streamUrl ? hostOf(prefs.streamUrl) : 'Not connected';
         win.setTitle('Brave Origin');
         if (selectText) {
@@ -1803,24 +1934,61 @@ __defs['apps/brave.js'] = function (__exports, __req) {
         }
       }
 
+      function fail(message) {
+        input.style.borderColor = '#c42b1c';
+        errorText.textContent = message;
+        errorText.hidden = false;
+        input.focus();
+      }
+
+      // One address per line; commas are accepted too because that is how people
+      // paste lists. Everything after the first becomes a fallback source.
       function save() {
-        const url = input.value.trim();
-        if (!/^https?:\/\//i.test(url)) {
-          input.style.borderColor = '#c42b1c';
-          input.focus();
-          return;
+        errorText.hidden = true;
+        const entries = input.value
+          .split(/[\n,]+/)
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+        if (!entries.length) return fail('Paste the stream address first.');
+
+        for (const entry of entries) {
+          // Pasting into a box that already holds an address appends to it, which
+          // gives something like https://host/https://host/ — that parses as a URL,
+          // so without this check it would appear to connect and then do nothing.
+          const schemes = entry.match(/https?:\/\//gi) || [];
+          let parsed;
+          try {
+            parsed = new URL(entry);
+          } catch {
+            parsed = null;
+          }
+          if (schemes.length > 1 || !parsed || !parsed.hostname.includes('.')) {
+            return fail(`That is not a single web address: ${entry.slice(0, 60)}`);
+          }
         }
+
         input.style.borderColor = '';
-        url = normalizeStream(url);
-        savePrefs({ streamUrl: url });
-        connect(url);
+        const list = entries.map(normalizeStream);
+        savePrefs({ streamUrl: list[0], streamUrls: list });
+        connect(0);
       }
 
       win.body.querySelector('[data-act="reload"]').addEventListener('click', () => {
-        if (!prefs.streamUrl) return showSetup(true);
-        empty.hidden = true;
-        frame.hidden = false;
-        frame.src = prefs.streamUrl;
+        if (!sourceList().length) return showSetup(true);
+        connect(active);
+      });
+      swapBtn.addEventListener('click', () => connect(active + 1));
+      win.body.querySelector('[data-act="alert-next"]').addEventListener('click', () => connect(active + 1));
+      win.body.querySelector('[data-act="alert-retry"]').addEventListener('click', () => connect(active));
+      // A blocked host does not leave the frame blank: the browser draws its own
+      // error page, which still fires `load` and would hide the warning. Those
+      // error pages arrive almost instantly, so a suspiciously quick load is what
+      // tells a blocked address apart from a stream that is actually coming up.
+      frame.addEventListener('load', () => {
+        clearTimeout(watchdog);
+        if (Date.now() - startedAt < 600) {
+          showAlert(`${hostOf(frame.src)} did not load any content. This network may be blocking it.`);
+        }
       });
       win.body.querySelector('[data-act="setup"]').addEventListener('click', () => showSetup(true));
       win.body.querySelector('[data-act="cancel"]').addEventListener('click', () => {
@@ -1836,12 +2004,18 @@ __defs['apps/brave.js'] = function (__exports, __req) {
         if (url) window.open(url, '_blank', 'noopener');
       });
       win.body.querySelector('[data-act="save"]').addEventListener('click', save);
+      // Selecting the existing address on focus means a paste replaces it instead
+      // of being appended to it.
+      input.addEventListener('focus', () => input.select());
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') save();
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          save();
+        }
       });
 
-      if (prefs.streamUrl) {
-        connect(prefs.streamUrl);
+      if (sourceList().length) {
+        connect(0);
         // A streamed browser is the point of this app, so it opens on the whole
         // desktop instead of a box in the middle of it.
         win.maximize();
