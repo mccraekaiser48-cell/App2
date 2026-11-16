@@ -1257,11 +1257,13 @@ html[data-wall="graphite"] .wallpaper {
 // 3. Paste it below between the quotes and save.
 // 4. Commit / re-upload this one file.
 //
+// The password is included, so noVNC connects without prompting.
 // With a URL here, the desktop opens the Brave Origin app on the streamed Brave,
 // so the whole thing is a single link with no pasting. Leave it empty and Brave
 // Origin asks for the address once, storing it in this browser.
 window.NIMBUS_CONFIG = {
   streamUrl: 'https://photographic-duration-palestinian-ipod.trycloudflare.com/',
+
   // Open the Brave Origin app on startup when streamUrl is set above.
   autoOpenBrowser: true,
 };
@@ -1752,6 +1754,25 @@ __defs['apps/brave.js'] = function (__exports, __req) {
       const empty = win.body.querySelector('[data-empty]');
       const input = win.body.querySelector('[data-input]');
 
+      // noVNC needs to be told to fit the framebuffer to the frame. resize=scale
+      // does that locally and always works; resize=remote depends on an x11vnc
+      // build that honours SetDesktopSize, and when it does not the stream stays
+      // 1280x800 at 1:1, leaving grey margins and scrollbars.
+      function normalizeStream(url) {
+        try {
+          const parsed = new URL(url);
+          // Only the plain noVNC page needs these; a KasmVNC server serves its own
+          // client at the root and manages its own scaling.
+          if (parsed.pathname.includes('vnc.html')) {
+            parsed.searchParams.set('autoconnect', 'true');
+            parsed.searchParams.set('resize', 'scale');
+          }
+          return parsed.toString();
+        } catch {
+          return url;
+        }
+      }
+
       function hostOf(url) {
         try {
           return new URL(url).host;
@@ -1762,6 +1783,7 @@ __defs['apps/brave.js'] = function (__exports, __req) {
 
       function connect(url) {
         if (!url) return showSetup(true);
+        url = normalizeStream(url);
         empty.hidden = true;
         frame.hidden = false;
         frame.src = url;
@@ -1789,6 +1811,7 @@ __defs['apps/brave.js'] = function (__exports, __req) {
           return;
         }
         input.style.borderColor = '';
+        url = normalizeStream(url);
         savePrefs({ streamUrl: url });
         connect(url);
       }
@@ -1817,8 +1840,14 @@ __defs['apps/brave.js'] = function (__exports, __req) {
         if (e.key === 'Enter') save();
       });
 
-      if (prefs.streamUrl) connect(prefs.streamUrl);
-      else showSetup(false);
+      if (prefs.streamUrl) {
+        connect(prefs.streamUrl);
+        // A streamed browser is the point of this app, so it opens on the whole
+        // desktop instead of a box in the middle of it.
+        win.maximize();
+      } else {
+        showSetup(false);
+      }
     },
   });
 
