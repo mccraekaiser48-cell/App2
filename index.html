@@ -1,0 +1,4093 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-wall="bloom">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nimbus OS</title>
+  <meta name="description" content="Nimbus OS — a Windows 11–style desktop environment that runs entirely in your browser.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230067c0'/><rect x='7' y='7' width='8' height='8' fill='white'/><rect x='17' y='7' width='8' height='8' fill='white'/><rect x='7' y='17' width='8' height='8' fill='white'/><rect x='17' y='17' width='8' height='8' fill='white'/></svg>">
+  <style>
+/* Nimbus OS — Windows 11 shell
+   Design tokens ------------------------------------------------------------ */
+:root {
+  --accent: #0067c0;
+  --accent-hover: #1975c7;
+  --accent-text: #ffffff;
+  --accent-soft: rgba(0, 103, 192, 0.1);
+
+  --text: #1a1a1a;
+  --text-2: #5c5c5c;
+  --text-3: #8a8a8a;
+
+  /* Windows 11 materials: Mica for windows, Acrylic for flyouts. */
+  --mica: rgba(243, 243, 243, 0.88);
+  --acrylic: rgba(244, 244, 244, 0.9);
+  --surface: #f9f9f9;
+  --surface-solid: #ffffff;
+  --card: rgba(255, 255, 255, 0.7);
+  --taskbar: rgba(243, 243, 243, 0.8);
+  --stroke: rgba(0, 0, 0, 0.0578);
+  --stroke-strong: rgba(0, 0, 0, 0.1178);
+  --divider: rgba(0, 0, 0, 0.0803);
+  --hover: rgba(0, 0, 0, 0.0373);
+  --pressed: rgba(0, 0, 0, 0.0745);
+  --shadow: 0 32px 64px rgba(0, 0, 0, 0.24), 0 2px 21px rgba(0, 0, 0, 0.14);
+  --shadow-soft: 0 16px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-flyout: 0 32px 64px rgba(0, 0, 0, 0.3), 0 2px 21px rgba(0, 0, 0, 0.14);
+
+  --radius: 8px;
+  --tb-h: 48px;
+  --font: "Segoe UI Variable Text", "Segoe UI", "Segoe UI Web (West European)", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --accent: #4cc2ff;
+  --accent-hover: #63ccff;
+  --accent-text: #00243d;
+  --accent-soft: rgba(76, 194, 255, 0.14);
+
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.68);
+  --text-3: rgba(255, 255, 255, 0.5);
+
+  --mica: rgba(44, 44, 44, 0.9);
+  --acrylic: rgba(43, 43, 43, 0.9);
+  --surface: #202020;
+  --surface-solid: #2c2c2c;
+  --card: rgba(255, 255, 255, 0.05);
+  --taskbar: rgba(32, 32, 32, 0.82);
+  --stroke: rgba(255, 255, 255, 0.0924);
+  --stroke-strong: rgba(255, 255, 255, 0.16);
+  --divider: rgba(255, 255, 255, 0.12);
+  --hover: rgba(255, 255, 255, 0.06);
+  --pressed: rgba(255, 255, 255, 0.1);
+  --shadow: 0 32px 64px rgba(0, 0, 0, 0.6), 0 2px 21px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 16px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  background: #0a0e17;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+::selection { background: var(--accent); color: var(--accent-text); }
+
+.icon { width: 22px; height: 22px; display: block; }
+
+/* Screen + wallpaper ------------------------------------------------------- */
+.screen {
+  position: fixed;
+  inset: 0 0 var(--tb-h) 0;
+  overflow: hidden;
+}
+
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  background-color: #0b1a33;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background 0.4s ease;
+}
+
+/* The default Windows 11 "Bloom" wallpaper, drawn as an SVG so the whole OS
+   stays plain text on GitHub Pages. Swap in a photo with background-image. */
+html[data-wall="bloom"] .wallpaper { background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIwIDEwODAiIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIHNsaWNlIj4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmciIGN4PSIwLjUiIGN5PSIwLjYiIHI9IjAuODYiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyODQ1NmYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjQiIHN0b3AtY29sb3I9IiMxMzI1NDUiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjc2IiBzdG9wLWNvbG9yPSIjMGExNTI2Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA1MDgwZiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icDEiIHgxPSIwLjEiIHkxPSIwIiB4Mj0iMC44NSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmMmZiZmYiIHN0b3Atb3BhY2l0eT0iMC45NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuMyIgc3RvcC1jb2xvcj0iIzlhZDdmZiIgc3RvcC1vcGFjaXR5PSIwLjYyIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC42MiIgc3RvcC1jb2xvcj0iIzRhODZlMCIgc3RvcC1vcGFjaXR5PSIwLjMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMWIyYTYzIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InAyIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2ZmZTBmNiIgc3RvcC1vcGFjaXR5PSIwLjQ2Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC40MiIgc3RvcC1jb2xvcj0iI2I3OGNmZiIgc3RvcC1vcGFjaXR5PSIwLjM4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzFiMmE2MyIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJwMyIgeDE9IjAuMiIgeTE9IjAuMSIgeDI9IjEiIHkyPSIwLjkiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNkOWY0ZmYiIHN0b3Atb3BhY2l0eT0iMC43Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41IiBzdG9wLWNvbG9yPSIjNmZiMmZmIiBzdG9wLW9wYWNpdHk9IjAuMzYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTAxYTNkIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImNvcmUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmZmZmYiIHN0b3Atb3BhY2l0eT0iMC45Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC40NSIgc3RvcC1jb2xvcj0iI2M2ZTlmZiIgc3RvcC1vcGFjaXR5PSIwLjMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjN2ZiYWZmIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgICA8ZmlsdGVyIGlkPSJiMSIgeD0iLTMwJSIgeT0iLTMwJSIgd2lkdGg9IjE2MCUiIGhlaWdodD0iMTYwJSI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMyIvPjwvZmlsdGVyPgogICAgPGZpbHRlciBpZD0iYjIiIHg9Ii01MCUiIHk9Ii01MCUiIHdpZHRoPSIyMDAlIiBoZWlnaHQ9IjIwMCUiPjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjQ2Ii8+PC9maWx0ZXI+CiAgPC9kZWZzPgoKICA8cmVjdCB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiBmaWxsPSJ1cmwoI2JnKSIvPgogIDxlbGxpcHNlIGN4PSI5NjAiIGN5PSI3MjAiIHJ4PSI3NjAiIHJ5PSIzMzAiIGZpbGw9IiMzZjdhZDgiIG9wYWNpdHk9IjAuMiIgZmlsdGVyPSJ1cmwoI2IyKSIvPgogIDxlbGxpcHNlIGN4PSIxNTAwIiBjeT0iMjQwIiByeD0iNDIwIiByeT0iMjYwIiBmaWxsPSIjOGE1YmQ2IiBvcGFjaXR5PSIwLjE2IiBmaWx0ZXI9InVybCgjYjIpIi8+CgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk2MCA1NjApIiBmaWx0ZXI9InVybCgjYjEpIiBzdHJva2U9IiNkOWYxZmYiIHN0cm9rZS1vcGFjaXR5PSIwLjIyIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogICAgPGc+CiAgICAgIDxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDApIHNjYWxlKDEuMDYpIiBmaWxsPSJ1cmwoI3AxKSIgb3BhY2l0eT0iMC45MiIKICAgICAgICBkPSJNMCAwQzE1MC0xMjAgMzQwLTI2OCA0ODYtMTc2QzU3OC03MiA0ODIgOTYgMzA2IDE1OEMxNTIgMjEyIDQwIDExNiAwIDBaIi8+CiAgICAgIDxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDQ1KSBzY2FsZSgwLjk4KSIgZmlsbD0idXJsKCNwMykiIG9wYWNpdHk9IjAuODYiCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSg5MCkgc2NhbGUoMS4wMikiIGZpbGw9InVybCgjcDIpIiBvcGFjaXR5PSIwLjgiCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSgxMzUpIHNjYWxlKDAuOTQpIiBmaWxsPSJ1cmwoI3AxKSIgb3BhY2l0eT0iMC44OCIKICAgICAgICBkPSJNMCAwQzE1MC0xMjAgMzQwLTI2OCA0ODYtMTc2QzU3OC03MiA0ODIgOTYgMzA2IDE1OEMxNTIgMjEyIDQwIDExNiAwIDBaIi8+CiAgICAgIDxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDE4MCkgc2NhbGUoMS4xKSIgZmlsbD0idXJsKCNwMykiIG9wYWNpdHk9IjAuODQiCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSgyMjUpIHNjYWxlKDAuOTYpIiBmaWxsPSJ1cmwoI3AyKSIgb3BhY2l0eT0iMC43NiIKICAgICAgICBkPSJNMCAwQzE1MC0xMjAgMzQwLTI2OCA0ODYtMTc2QzU3OC03MiA0ODIgOTYgMzA2IDE1OEMxNTIgMjEyIDQwIDExNiAwIDBaIi8+CiAgICAgIDxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDI3MCkgc2NhbGUoMS4wNCkiIGZpbGw9InVybCgjcDEpIiBvcGFjaXR5PSIwLjkiCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSgzMTUpIHNjYWxlKDAuOTIpIiBmaWxsPSJ1cmwoI3AzKSIgb3BhY2l0eT0iMC44MiIKICAgICAgICBkPSJNMCAwQzE1MC0xMjAgMzQwLTI2OCA0ODYtMTc2QzU3OC03MiA0ODIgOTYgMzA2IDE1OEMxNTIgMjEyIDQwIDExNiAwIDBaIi8+CiAgICA8L2c+CgogICAgPGcgb3BhY2l0eT0iMC43MiIgc3Ryb2tlLW9wYWNpdHk9IjAuMTIiPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSgyMikgc2NhbGUoMC42MikiIGZpbGw9InVybCgjcDIpIiBvcGFjaXR5PSIwLjciCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSg2Nykgc2NhbGUoMC41NikiIGZpbGw9InVybCgjcDMpIiBvcGFjaXR5PSIwLjcyIgogICAgICAgIGQ9Ik0wIDBDMTUwLTEyMCAzNDAtMjY4IDQ4Ni0xNzZDNTc4LTcyIDQ4MiA5NiAzMDYgMTU4QzE1MiAyMTIgNDAgMTE2IDAgMFoiLz4KICAgICAgPHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMTEyKSBzY2FsZSgwLjYpIiBmaWxsPSJ1cmwoI3AxKSIgb3BhY2l0eT0iMC43IgogICAgICAgIGQ9Ik0wIDBDMTUwLTEyMCAzNDAtMjY4IDQ4Ni0xNzZDNTc4LTcyIDQ4MiA5NiAzMDYgMTU4QzE1MiAyMTIgNDAgMTE2IDAgMFoiLz4KICAgICAgPHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMTU3KSBzY2FsZSgwLjU0KSIgZmlsbD0idXJsKCNwMikiIG9wYWNpdHk9IjAuNjYiCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSgyMDIpIHNjYWxlKDAuNTgpIiBmaWxsPSJ1cmwoI3AzKSIgb3BhY2l0eT0iMC43IgogICAgICAgIGQ9Ik0wIDBDMTUwLTEyMCAzNDAtMjY4IDQ4Ni0xNzZDNTc4LTcyIDQ4MiA5NiAzMDYgMTU4QzE1MiAyMTIgNDAgMTE2IDAgMFoiLz4KICAgICAgPHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMjQ3KSBzY2FsZSgwLjYyKSIgZmlsbD0idXJsKCNwMSkiIG9wYWNpdHk9IjAuNjYiCiAgICAgICAgZD0iTTAgMEMxNTAtMTIwIDM0MC0yNjggNDg2LTE3NkM1NzgtNzIgNDgyIDk2IDMwNiAxNThDMTUyIDIxMiA0MCAxMTYgMCAwWiIvPgogICAgICA8cGF0aCB0cmFuc2Zvcm09InJvdGF0ZSgyOTIpIHNjYWxlKDAuNTQpIiBmaWxsPSJ1cmwoI3AyKSIgb3BhY2l0eT0iMC42IgogICAgICAgIGQ9Ik0wIDBDMTUwLTEyMCAzNDAtMjY4IDQ4Ni0xNzZDNTc4LTcyIDQ4MiA5NiAzMDYgMTU4QzE1MiAyMTIgNDAgMTE2IDAgMFoiLz4KICAgICAgPHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMzM3KSBzY2FsZSgwLjYpIiBmaWxsPSJ1cmwoI3AzKSIgb3BhY2l0eT0iMC42OCIKICAgICAgICBkPSJNMCAwQzE1MC0xMjAgMzQwLTI2OCA0ODYtMTc2QzU3OC03MiA0ODIgOTYgMzA2IDE1OEMxNTIgMjEyIDQwIDExNiAwIDBaIi8+CiAgICA8L2c+CgogICAgPGNpcmNsZSByPSIxOTAiIGZpbGw9InVybCgjY29yZSkiLz4KICA8L2c+CgogIDxyZWN0IHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIGZpbGw9Im5vbmUiLz4KPC9zdmc+Cg=="); }
+
+html[data-wall="sunset"] .wallpaper {
+  background-image:
+    radial-gradient(110% 80% at 20% 90%, rgba(255, 170, 90, 0.9) 0%, rgba(220, 90, 70, 0.4) 40%, rgba(30, 12, 30, 0) 72%),
+    radial-gradient(90% 70% at 82% 12%, rgba(255, 120, 170, 0.75) 0%, rgba(120, 40, 110, 0.3) 48%, rgba(30, 12, 30, 0) 78%),
+    linear-gradient(180deg, #241436 0%, #4a1f42 55%, #7b2f38 100%);
+}
+html[data-wall="ocean"] .wallpaper {
+  background-image:
+    radial-gradient(100% 80% at 15% 15%, rgba(88, 224, 214, 0.85) 0%, rgba(24, 120, 150, 0.4) 42%, rgba(4, 24, 36, 0) 72%),
+    radial-gradient(90% 80% at 85% 80%, rgba(66, 140, 255, 0.8) 0%, rgba(20, 50, 130, 0.35) 45%, rgba(4, 24, 36, 0) 78%),
+    linear-gradient(160deg, #041a2a 0%, #06324a 55%, #052a44 100%);
+}
+html[data-wall="graphite"] .wallpaper {
+  background-image:
+    radial-gradient(90% 70% at 25% 10%, rgba(190, 205, 230, 0.55) 0%, rgba(90, 105, 135, 0.28) 45%, rgba(18, 20, 26, 0) 76%),
+    radial-gradient(80% 70% at 80% 85%, rgba(120, 140, 190, 0.45) 0%, rgba(60, 70, 95, 0.25) 50%, rgba(18, 20, 26, 0) 80%),
+    linear-gradient(165deg, #1a1d24 0%, #262a33 55%, #14161c 100%);
+}
+
+/* Desktop icons ----------------------------------------------------------- */
+/* Desktop icons ------------------------------------------------------------ */
+.desktop-icons {
+  position: absolute;
+  inset: 8px auto auto 8px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, 104px);
+  gap: 0;
+  align-content: start;
+}
+
+.dicon {
+  width: 88px;
+  padding: 10px 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.dicon .icon { width: 44px; height: 44px; }
+.dicon span {
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+.dicon:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.12); }
+.dicon:active { background: rgba(255, 255, 255, 0.16); }
+.dicon:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+/* Windows ----------------------------------------------------------------- */
+/* Windows ------------------------------------------------------------------ */
+.window-layer { position: absolute; inset: 0; pointer-events: none; }
+
+.window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  min-height: 200px;
+  border-radius: var(--radius);
+  border: 1px solid var(--stroke-strong);
+  background: var(--mica);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  backdrop-filter: blur(30px) saturate(150%);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  pointer-events: auto;
+  will-change: left, top, width, height;
+}
+.window.active { box-shadow: var(--shadow); }
+.window.minimized { display: none; }
+.window.maximized { border-radius: 0; border-color: transparent; }
+.window.dragging, .window.resizing { transition: none; }
+.window.opening { animation: winIn 0.14s cubic-bezier(0.1, 0.9, 0.2, 1); }
+@keyframes winIn {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Windows 11 caption bar: 32px tall, glyph buttons 46x32, close turns red. */
+.titlebar {
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 12px;
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+}
+.tb-icon { display: flex; }
+.tb-icon .icon { width: 16px; height: 16px; }
+.tb-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.window.active .tb-title { color: var(--text); }
+
+.tb-controls { display: flex; align-self: stretch; margin-left: auto; }
+.tb-controls button {
+  width: 46px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  padding: 0;
+}
+.tb-controls button:hover { background: var(--hover); }
+.tb-controls button:active { background: var(--pressed); }
+.tb-controls .close:hover { background: #c42b1c; color: #fff; }
+.tb-controls .close:active { background: #b02a1c; color: #fff; }
+
+.window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+.window.maximized .resize-handle { display: none; }
+
+/* Taskbar ----------------------------------------------------------------- */
+/* Taskbar ------------------------------------------------------------------ */
+.taskbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--tb-h);
+  display: flex;
+  align-items: center;
+  background: var(--taskbar);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  backdrop-filter: blur(40px) saturate(170%);
+  border-top: 1px solid var(--stroke);
+  z-index: 9000;
+}
+
+/* Widgets sits in the left corner, outside the centred group, as in Windows 11. */
+.widgets {
+  position: absolute;
+  left: 6px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+}
+.widgets:hover { background: var(--hover); }
+.widgets .icon { width: 22px; height: 22px; }
+.widgets span { font-size: 12px; }
+
+.taskbar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.taskbar-apps { display: flex; align-items: center; gap: 2px; }
+
+.tb-start, .tb-btn {
+  position: relative;
+  width: 44px;
+  height: 42px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  transition: background 0.1s ease;
+}
+.tb-start { color: var(--accent); }
+.tb-start .icon { width: 24px; height: 24px; }
+.tb-start:hover, .tb-btn:hover { background: var(--hover); }
+.tb-start:active, .tb-btn:active { background: var(--pressed); }
+.tb-start.open { background: var(--pressed); }
+.tb-btn .icon { width: 24px; height: 24px; }
+
+/* Running-app indicator: a 3px pill that widens under the focused window. */
+.tb-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--text-3);
+  transition: width 0.12s ease, background 0.12s ease;
+}
+.tb-btn.running::after { width: 6px; }
+.tb-btn.running:hover::after { width: 16px; }
+.tb-btn.active::after { width: 16px; background: var(--accent); }
+.tb-btn.active { background: var(--hover); }
+
+.tb-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  margin: 0 4px;
+  padding: 0 16px 0 12px;
+  border-radius: 17px;
+  border: 1px solid var(--stroke-strong);
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--text-2);
+}
+.tb-search:hover { background: rgba(255, 255, 255, 0.62); color: var(--text); }
+[data-theme="dark"] .tb-search { background: rgba(255, 255, 255, 0.05); }
+[data-theme="dark"] .tb-search:hover { background: rgba(255, 255, 255, 0.09); }
+.tb-search .icon { width: 16px; height: 16px; }
+.tb-search span { font-size: 12px; }
+
+.tray {
+  position: absolute;
+  right: 6px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.tray-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+.tray-btn .icon { width: 16px; height: 16px; }
+.tray-btn:hover { background: var(--hover); }
+.tray-clock {
+  height: 100%;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text);
+  user-select: none;
+}
+.tray-clock:hover { background: var(--hover); }
+.tray-clock span { display: block; }
+#clock-date { font-size: 11px; }
+
+/* The 6px "show desktop" sliver at the far right edge. */
+.show-desktop {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--stroke);
+  background: transparent;
+}
+.show-desktop:hover { background: var(--hover); }
+
+/* Start menu -------------------------------------------------------------- */
+/* Start menu --------------------------------------------------------------- */
+.startmenu {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tb-h) + 12px);
+  transform: translateX(-50%);
+  width: 640px;
+  max-width: calc(100vw - 24px);
+  max-height: min(708px, calc(100vh - var(--tb-h) - 24px));
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--acrylic);
+  -webkit-backdrop-filter: blur(60px) saturate(160%);
+  backdrop-filter: blur(60px) saturate(160%);
+  box-shadow: var(--shadow-flyout);
+  z-index: 9500;
+  overflow: hidden;
+  animation: startIn 0.18s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+@keyframes startIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.startmenu[hidden] { display: none; }
+
+.start-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 24px 6px;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  color: var(--text-2);
+}
+.start-search:focus-within {
+  border-color: var(--stroke-strong);
+  border-bottom: 2px solid var(--accent);
+}
+.start-search .icon { width: 16px; height: 16px; }
+.start-search input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.start-search input::-webkit-search-cancel-button { filter: grayscale(1); }
+
+.start-body { flex: 1; overflow: auto; padding: 6px 24px 12px; }
+.start-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.start-head[hidden] { display: none; }
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 11.5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.link:hover { background: var(--hover); }
+
+.start-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+}
+.start-grid[hidden], .start-list[hidden], .start-recent[hidden], .start-recent-head[hidden] { display: none; }
+
+.start-app {
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  padding: 14px 4px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  text-align: center;
+}
+.start-app:hover { background: var(--hover); }
+.start-app:active { background: var(--pressed); }
+.start-app .icon { width: 32px; height: 32px; }
+.start-app span {
+  font-size: 12px;
+  line-height: 1.2;
+  max-width: 92px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.start-list { display: flex; flex-direction: column; gap: 1px; }
+.start-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  font-size: 12.5px;
+}
+.start-row:hover { background: var(--hover); }
+.start-row .icon { width: 22px; height: 22px; }
+.start-row small { margin-left: auto; color: var(--text-3); font-size: 11px; }
+
+.start-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.start-recent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.rec-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  color: var(--text);
+}
+.rec-item:hover { background: var(--hover); }
+.rec-item .icon { width: 24px; height: 24px; flex: 0 0 auto; }
+.rec-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rec-item strong { font-size: 12px; font-weight: 400; }
+.rec-item small { font-size: 11px; color: var(--text-2); }
+
+.start-empty { padding: 28px 4px; color: var(--text-2); font-size: 12.5px; }
+.start-empty[hidden] { display: none; }
+
+.start-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 24px;
+  border-top: 1px solid var(--divider);
+  background: rgba(127, 127, 127, 0.06);
+}
+.start-user { display: flex; align-items: center; gap: 12px; font-size: 12.5px; }
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #7ec4ff, #0067c0);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.power {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+.power:hover { background: var(--hover); }
+
+/* Shared app UI ----------------------------------------------------------- */
+.row { display: flex; align-items: center; gap: 10px; }
+.spacer { flex: 1; }
+.btn {
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+}
+.btn:hover { background: var(--hover); }
+.btn:active { background: var(--pressed); }
+.btn.primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.primary:disabled { opacity: 0.55; cursor: default; }
+.btn.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+.btn.ghost:hover { background: var(--hover); }
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 12px;
+  border-top: 1px solid var(--stroke);
+  background: rgba(127, 127, 127, 0.06);
+  font-size: 11px;
+  color: var(--text-2);
+  flex: 0 0 auto;
+}
+
+/* Browser ----------------------------------------------------------------- */
+.browser { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--stroke);
+  background: var(--surface);
+  flex: 0 0 auto;
+}
+.browser-btn {
+  width: 32px;
+  height: 30px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+}
+.browser-btn:hover { background: var(--hover); color: var(--text); }
+.browser-btn:disabled { opacity: 0.4; cursor: default; background: transparent; }
+.browser-btn .icon { width: 18px; height: 18px; }
+.browser-url {
+  flex: 1;
+  height: 32px;
+  min-width: 0;
+  border-radius: 16px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  padding: 0 14px;
+  font-size: 12.5px;
+  outline: none;
+}
+.browser-url:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.browser-view { position: relative; flex: 1; min-height: 0; background: #fff; }
+.browser-view iframe { border: 0; width: 100%; height: 100%; display: block; background: #fff; }
+.browser-view iframe[hidden] { display: none; }
+
+.browser-start {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 28px 32px;
+  background: linear-gradient(160deg, #f3f7ff, #e8eefb 55%, #eef1f8);
+  color: #1b1b1b;
+}
+.browser-start h1 { margin: 0 0 6px; font-size: 22px; font-weight: 600; }
+.browser-start p { margin: 0 0 18px; font-size: 12.5px; color: #555; max-width: 60ch; line-height: 1.55; }
+.quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.quick:hover { border-color: rgba(0, 0, 0, 0.2); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09); }
+.quick strong { font-size: 12.5px; font-weight: 600; }
+.quick span { font-size: 11px; color: #666; }
+.browser-note {
+  margin-top: 20px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(0, 103, 192, 0.08);
+  border: 1px solid rgba(0, 103, 192, 0.16);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #2b3a4a;
+  max-width: 72ch;
+}
+
+.browser-stream {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 32px;
+  background: var(--surface);
+  color: var(--text);
+  overflow: auto;
+}
+.browser-stream[hidden] { display: none; }
+.browser-stream h3 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+.browser-stream p { margin: 0 0 10px; font-size: 12.5px; line-height: 1.6; color: var(--text-2); max-width: 64ch; }
+.browser-stream .stream-url {
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  padding: 0 12px;
+  font-size: 12.5px;
+  outline: none;
+  max-width: 460px;
+}
+.browser-stream .stream-url:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.browser-stream .row { max-width: 460px; }
+.browser-stream code {
+  font-family: "Cascadia Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.5px;
+  background: rgba(127, 127, 127, 0.16);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+/* Notepad ----------------------------------------------------------------- */
+.notepad { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.notepad-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--stroke);
+  background: var(--surface);
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+.notepad textarea {
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  padding: 16px 18px;
+  background: var(--surface);
+  font: 13.5px/1.65 "Cascadia Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  color: var(--text);
+}
+
+/* Calculator -------------------------------------------------------------- */
+.calc { display: flex; flex-direction: column; height: 100%; padding: 0 8px 8px; background: var(--mica); }
+.calc-mode { padding: 8px 6px 0; font-size: 12px; color: var(--text-2); font-weight: 600; }
+.calc-display {
+  padding: 8px 10px 14px;
+  text-align: right;
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calc-sub { text-align: right; font-size: 11.5px; color: var(--text-3); height: 14px; padding-right: 10px; }
+.calc-keys { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.calc-keys button {
+  border: 1px solid var(--stroke);
+  border-radius: 5px;
+  background: var(--surface-solid);
+  font-size: 16px;
+  font-weight: 500;
+  min-height: 44px;
+}
+.calc-keys button:hover { background: var(--hover); }
+.calc-keys button:active { background: var(--pressed); }
+.calc-keys button.fn { background: rgba(127, 127, 127, 0.12); font-size: 14px; }
+.calc-keys button.eq { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+.calc-keys button.eq:hover { background: var(--accent-hover); }
+
+/* Terminal ---------------------------------------------------------------- */
+.terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0c0c0c;
+  color: #d4d4d4;
+  font: 12.5px/1.55 "Cascadia Mono", ui-monospace, Consolas, monospace;
+}
+.term-out { flex: 1; overflow: auto; padding: 12px 14px; white-space: pre-wrap; word-break: break-word; }
+.term-line.cmd { color: #7ecbff; }
+.term-line.err { color: #ff8b7b; }
+.term-line.dim { color: #8a8a8a; }
+.term-input-row { display: flex; align-items: center; gap: 8px; padding: 0 14px 12px; }
+.term-input-row span { color: #4cc2ff; }
+.term-input-row input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+/* App Store --------------------------------------------------------------- */
+.store { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--surface); }
+.store-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--stroke);
+  flex: 0 0 auto;
+}
+.store-top h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.store-search {
+  margin-left: auto;
+  height: 30px;
+  width: 210px;
+  border-radius: 15px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  padding: 0 12px;
+  font-size: 12.5px;
+  outline: none;
+}
+.store-search:focus { border-color: var(--accent); }
+.store-scroll { flex: 1; overflow: auto; padding: 16px; }
+.store-hero {
+  position: relative;
+  border-radius: 10px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 85% 10%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(120deg, #0b4f9e, #5b2fbb 60%, #b0338f);
+  overflow: hidden;
+}
+.store-hero h3 { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+.store-hero p { margin: 0 0 14px; font-size: 12.5px; max-width: 56ch; line-height: 1.55; opacity: 0.92; }
+.store-hero .btn {
+  background: #fff;
+  border-color: transparent;
+  color: #16233a;
+  font-weight: 600;
+}
+.store-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 10px;
+}
+.store-section-head h4 { margin: 0; font-size: 13px; font-weight: 600; }
+.store-section-head span { font-size: 11px; color: var(--text-3); }
+.store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.store-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  background: var(--card);
+}
+.store-card .icon { width: 38px; height: 38px; flex: 0 0 auto; }
+.store-card .meta { flex: 1; min-width: 0; }
+.store-card .meta strong { display: block; font-size: 12.5px; font-weight: 600; }
+.store-card .meta p { margin: 3px 0 0; font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+.store-card .meta .tag { font-size: 10.5px; color: var(--text-3); }
+.store-on { display: block; font-size: 10.5px; color: var(--text-3); margin-top: 6px; }
+
+/* Settings ---------------------------------------------------------------- */
+.settings { display: flex; height: 100%; min-height: 0; }
+.settings-nav {
+  width: 180px;
+  flex: 0 0 180px;
+  padding: 10px 8px;
+  border-right: 1px solid var(--stroke);
+  background: rgba(127, 127, 127, 0.05);
+  overflow: auto;
+}
+.settings-nav button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.settings-nav button:hover { background: var(--hover); }
+.settings-nav button.on { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.settings-panel { flex: 1; padding: 18px 22px; overflow: auto; }
+.settings-panel h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+.settings-panel .sub { margin: 0 0 18px; font-size: 12px; color: var(--text-2); }
+.set-group { border: 1px solid var(--stroke); border-radius: 8px; overflow: hidden; margin-bottom: 14px; background: var(--card); }
+.set-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--stroke); font-size: 12.5px; }
+.set-row:last-child { border-bottom: 0; }
+.set-row .label { flex: 1; }
+.set-row .label small { display: block; color: var(--text-2); font-size: 11px; margin-top: 2px; }
+.swatches { display: flex; gap: 8px; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; padding: 0; }
+.swatch.on { border-color: var(--text); }
+.walls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.wall-opt { height: 52px; border-radius: 6px; border: 2px solid transparent; padding: 0; }
+.wall-opt.on { border-color: var(--accent); }
+.wall-opt[data-wall="bloom"] { background: linear-gradient(140deg, #2a5bd7, #8a4bd8 55%, #d75a95); }
+.wall-opt[data-wall="sunset"] { background: linear-gradient(140deg, #3a1f52, #a4405e 60%, #ff9a5b); }
+.wall-opt[data-wall="ocean"] { background: linear-gradient(140deg, #063a4e, #12849a 60%, #3f8bff); }
+.wall-opt[data-wall="graphite"] { background: linear-gradient(140deg, #23262e, #4a5160 60%, #8a93a8); }
+
+/* Paint ------------------------------------------------------------------- */
+.paint { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--surface); }
+.paint-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--stroke);
+  flex: 0 0 auto;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.paint-bar input[type="color"] { width: 34px; height: 28px; border: 1px solid var(--stroke-strong); border-radius: 4px; background: none; padding: 2px; }
+.paint-bar input[type="range"] { width: 110px; accent-color: var(--accent); }
+.paint-canvas-wrap { flex: 1; min-height: 0; display: grid; place-items: center; background: rgba(127, 127, 127, 0.12); padding: 12px; }
+.paint canvas { background: #fff; border: 1px solid var(--stroke-strong); border-radius: 4px; box-shadow: var(--shadow-soft); cursor: crosshair; touch-action: none; max-width: 100%; max-height: 100%; }
+
+/* Snake ------------------------------------------------------------------- */
+.game { display: flex; flex-direction: column; height: 100%; background: var(--surface); }
+.game-hud { display: flex; align-items: center; gap: 16px; padding: 8px 14px; border-bottom: 1px solid var(--stroke); font-size: 12px; }
+.game-stage { flex: 1; display: grid; place-items: center; padding: 12px; background: rgba(127, 127, 127, 0.1); position: relative; }
+.game canvas { background: #0f1720; border-radius: 6px; touch-action: none; }
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 15, 22, 0.62);
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+.game-overlay[hidden] { display: none; }
+.game-overlay strong { display: block; font-size: 18px; margin-bottom: 8px; }
+.game-overlay .btn { margin-top: 12px; }
+
+/* Weather ----------------------------------------------------------------- */
+.weather { padding: 22px 24px; height: 100%; overflow: auto; }
+.weather-hero { display: flex; align-items: center; gap: 18px; }
+.weather-hero .temp { font-size: 52px; font-weight: 200; letter-spacing: -2px; line-height: 1; }
+.weather-hero .where { font-size: 13px; color: var(--text-2); margin-top: 6px; }
+.weather-hero .cond { font-size: 13px; margin-top: 4px; }
+.weather-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 22px; }
+.stat { border: 1px solid var(--stroke); border-radius: 8px; padding: 10px 12px; background: var(--card); }
+.stat span { display: block; font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; }
+.stat strong { font-size: 15px; font-weight: 600; }
+.weather-note { margin-top: 18px; font-size: 11.5px; color: var(--text-2); line-height: 1.55; }
+
+/* Clock ------------------------------------------------------------------- */
+.clockapp { display: flex; flex-direction: column; gap: 18px; padding: 24px; height: 100%; justify-content: center; align-items: center; }
+.clockapp .big { font-size: 58px; font-weight: 200; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+.clockapp .bigdate { font-size: 13px; color: var(--text-2); margin-top: -10px; }
+.stopwatch { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 6px; }
+.stopwatch .lcd { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 300; }
+
+/* Small screens ----------------------------------------------------------- */
+@media (max-width: 720px) {
+  .desktop-icons { grid-template-rows: repeat(auto-fill, 86px); }
+  .start-grid { grid-template-columns: repeat(4, 1fr); }
+  .settings-nav { width: 130px; flex-basis: 130px; }
+  .tray-clock #clock-date { display: none; }
+  .store-search { width: 120px; }
+}
+
+/* Quick settings (tray flyout) --------------------------------------------- */
+.quicksettings {
+  position: fixed;
+  right: 10px;
+  bottom: calc(var(--tb-h) + 10px);
+  width: 372px;
+  max-width: calc(100vw - 20px);
+  max-height: min(600px, calc(100vh - var(--tb-h) - 24px));
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--acrylic);
+  -webkit-backdrop-filter: blur(60px) saturate(160%);
+  backdrop-filter: blur(60px) saturate(160%);
+  box-shadow: var(--shadow-flyout);
+  z-index: 9400;
+  animation: qsIn 0.16s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+.quicksettings[hidden] { display: none; }
+@keyframes qsIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.qs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.qs-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1;
+}
+.qs-close:hover { background: var(--hover); }
+.qs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.qs-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 10px;
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  background: var(--card);
+  text-align: left;
+  min-width: 0;
+}
+.qs-tile:hover { background: rgba(127, 127, 127, 0.12); }
+.qs-tile.active { border-color: var(--accent); background: var(--accent-soft); }
+.qs-tile.passive { cursor: default; }
+.qs-icon { display: grid; place-items: center; width: 22px; height: 22px; color: var(--text); flex: none; }
+.qs-icon .icon { width: 20px; height: 20px; }
+.qs-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; width: 100%; }
+.qs-text strong { font-size: 11.5px; font-weight: 600; }
+.qs-text small {
+  font-size: 10.5px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.qs-detail { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.qs-detail h4 { margin: 0 0 8px; font-size: 13px; }
+.qs-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+.qs-facts dt { color: var(--text-2); }
+.qs-facts dd { margin: 0; }
+.qs-note { margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-2); }
+.qs-note.strong { color: var(--text); }
+.tray-btn.off { color: #c42b1c; }
+.tray-btn.open { background: var(--pressed); }
+
+/* Narrow screens ----------------------------------------------------------- */
+@media (max-width: 900px) {
+  .widgets span, .tb-search span { display: none; }
+  .tb-search { padding: 0 10px; }
+}
+@media (max-width: 720px) {
+  .desktop-icons { grid-template-rows: repeat(auto-fill, 96px); }
+  .start-grid { grid-template-columns: repeat(4, 1fr); }
+  .start-recent { grid-template-columns: 1fr; }
+  .settings-nav { width: 130px; flex-basis: 130px; }
+  .store-search { width: 120px; }
+}
+
+/* Brave Origin ------------------------------------------------------------- */
+.brave { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--surface); }
+.brave-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--stroke);
+  flex: 0 0 auto;
+}
+.brave-url {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brave-view { position: relative; flex: 1; min-height: 0; background: #101010; }
+.brave-view iframe { display: block; width: 100%; height: 100%; border: 0; background: #101010; }
+.brave-view iframe[hidden] { display: none; }
+.brave-empty {
+  position: absolute;
+  inset: 0;
+  padding: 26px 30px;
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+}
+.brave-empty[hidden] { display: none; }
+.brave-empty h3 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+.brave-empty p { margin: 0 0 12px; font-size: 12.5px; line-height: 1.6; color: var(--text-2); max-width: 64ch; }
+.brave-empty code {
+  font-family: "Cascadia Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.5px;
+  background: rgba(127, 127, 127, 0.16);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+.brave-empty .stream-url {
+  width: 100%;
+  max-width: 460px;
+  height: 34px;
+  border-radius: 4px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface-solid);
+  padding: 0 12px;
+  font-size: 12.5px;
+  outline: none;
+}
+.brave-empty .stream-url:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.brave-hint { margin-top: 16px !important; font-size: 11.5px !important; color: var(--text-3) !important; }
+
+</style>
+</head>
+<body>
+  <div id="screen" class="screen">
+    <div id="wallpaper" class="wallpaper"></div>
+    <div id="desktop-icons" class="desktop-icons" aria-label="Desktop shortcuts"></div>
+    <div id="window-layer" class="window-layer"></div>
+  </div>
+
+  <div id="startmenu" class="startmenu" hidden>
+    <div class="start-search">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="start-search-input" type="search" placeholder="Search apps and settings" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="start-body">
+      <div class="start-head" id="start-pinned-head">
+        <span>Pinned</span>
+        <button id="start-all-toggle" class="link" type="button">All apps &rsaquo;</button>
+      </div>
+      <div id="start-pinned" class="start-grid"></div>
+
+      <div id="start-recent-head" class="start-recent-head">
+        <span>Recommended</span>
+        <button id="start-recent-more" class="link" type="button">More &rsaquo;</button>
+      </div>
+      <div id="start-recent" class="start-recent"></div>
+
+      <div class="start-head" id="start-all-head" hidden>
+        <span>All apps</span>
+        <button id="start-all-back" class="link" type="button">&lsaquo; Back</button>
+      </div>
+      <div id="start-all" class="start-list" hidden></div>
+      <div id="start-empty" class="start-empty" hidden>No results for that search.</div>
+    </div>
+
+    <div class="start-footer">
+      <div class="start-user">
+        <div class="avatar" aria-hidden="true">N</div>
+        <span>Nimbus user</span>
+      </div>
+      <button id="start-power" class="power" type="button" title="Sign out" aria-label="Sign out">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M12 3v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6.5 6.8a8 8 0 1 0 11 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="taskbar" class="taskbar">
+    <button id="widgets" class="widgets" type="button" title="Weather">
+      <svg viewBox="0 0 32 32" class="icon" aria-hidden="true"><circle cx="11.5" cy="12" r="6" fill="#ffca28"/><path d="M8.6 25.5a5.6 5.6 0 0 1 .7-11.1A7 7 0 0 1 22.6 16a4.6 4.6 0 0 1-.6 9.5z" fill="#eaf2fc" stroke="#b3c5db"/></svg>
+      <span>Weather</span>
+    </button>
+
+    <div class="taskbar-center">
+      <button id="start-button" class="tb-start" type="button" title="Start" aria-label="Start">
+        <svg viewBox="0 0 32 32" class="icon" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="12" height="12" rx="1" fill="currentColor"/>
+          <rect x="17.5" y="2.5" width="12" height="12" rx="1" fill="currentColor"/>
+          <rect x="2.5" y="17.5" width="12" height="12" rx="1" fill="currentColor"/>
+          <rect x="17.5" y="17.5" width="12" height="12" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="tb-search" class="tb-search" type="button" title="Search" aria-label="Search">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15.4 15.4 21 21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>Search</span>
+      </button>
+      <div id="taskbar-apps" class="taskbar-apps"></div>
+    </div>
+    <div class="tray">
+      <button id="tray-network" class="tray-btn" type="button" title="Network" aria-label="Network"></button>
+      <button id="tray-bluetooth" class="tray-btn" type="button" title="Bluetooth" aria-label="Bluetooth"></button>
+      <button id="tray-theme" class="tray-btn" type="button" title="Toggle light / dark">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="currentColor"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></g></svg>
+      </button>
+      <div class="tray-clock" id="tray-clock" title="Date and time">
+        <span id="clock-time">--:--</span>
+        <span id="clock-date"></span>
+      </div>
+    </div>
+    <button id="show-desktop" class="show-desktop" type="button" title="Show desktop" aria-label="Show desktop"></button>
+  </div>
+
+  <div id="quicksettings" class="quicksettings" hidden></div>
+
+  <!-- Plain scripts, not modules: browsers refuse to load ES modules from a
+       double-clicked file, and this way the desktop also works straight off disk.
+       js/config.js is loaded separately so editing it needs no rebuild.
+       js/bundle.js is built from js/*.js by tools/bundle_os.py. -->
+  <script>
+// Nimbus OS configuration — this file is loaded directly, not bundled, so editing
+// it here (or on GitHub) takes effect on the next page load with no build step.
+//
+// 1. Deploy the Brave container (see docs/PC-HOSTED-BRAVE.md).
+// 2. Copy its public https URL, e.g. https://random-words.trycloudflare.com
+// 3. Paste it below between the quotes and save.
+// 4. Commit / re-upload this one file.
+//
+// With a URL here, the desktop opens the Brave Origin app on the streamed Brave,
+// so the whole thing is a single link with no pasting. Leave it empty and Brave
+// Origin asks for the address once, storing it in this browser.
+window.NIMBUS_CONFIG = {
+  streamUrl: 'https://lotus-wal-affair-fewer.trycloudflare.com/vnc.html?autoconnect=true&resize=remote',
+
+  // Open the Brave Origin app on startup when streamUrl is set above.
+  autoOpenBrowser: true,
+};
+
+</script>
+  <script>
+// GENERATED FILE — do not edit.
+// Built from js/*.js by tools/bundle_os.py so the desktop also runs from file://,
+// where browsers refuse to load ES modules. Edit the sources, then re-run:
+//     python3 tools/bundle_os.py
+(function () {
+  'use strict';
+  var __defs = {};
+  var __cache = {};
+  function __req(key) {
+    if (__cache[key]) return __cache[key];
+    var exports = {};
+    __cache[key] = exports;
+    __defs[key](exports, __req);
+    return exports;
+  }
+
+__defs['registry.js'] = function (__exports, __req) {
+  // App registry: every app (built in or installed from the Store) registers itself here.
+  const apps = new Map();
+
+  /**
+   * @param {object} def
+   * @param {string} def.id            unique id, also the app-store key
+   * @param {string} def.name
+   * @param {string} def.icon          key from icons.js
+   * @param {string} [def.category]    "Productivity" | "Games" | "Utilities" ...
+   * @param {string} [def.description]
+   * @param {number} [def.width]
+   * @param {number} [def.height]
+   * @param {boolean} [def.builtin]    true = preinstalled, cannot be uninstalled
+   * @param {boolean} [def.single]     false = allow multiple windows
+   * @param {(win: import('./wm.js').Win) => void} def.launch
+   */
+  function defineApp(def) {
+    if (!def || !def.id) throw new Error('defineApp requires an id');
+    if (typeof def.launch !== 'function') throw new Error(`App "${def.id}" needs a launch() function`);
+    apps.set(def.id, {
+      category: 'Utilities',
+      description: '',
+      width: 760,
+      height: 520,
+      minWidth: 360,
+      minHeight: 240,
+      builtin: false,
+      single: true,
+      ...def,
+    });
+  }
+
+  function getApp(id) {
+    return apps.get(id) || null;
+  }
+
+  function listApps() {
+    return [...apps.values()];
+  }
+  __exports.defineApp = defineApp;
+  __exports.getApp = getApp;
+  __exports.listApps = listApps;
+};
+
+__defs['state.js'] = function (__exports, __req) {
+  // Persisted desktop preferences (theme, wallpaper, accent, installed apps, shortcuts).
+  // js/config.js is a plain script that sets this global, so it can be edited
+  // without rebuilding the bundle.
+  const config = (typeof window !== 'undefined' && window.NIMBUS_CONFIG) || {};
+
+  const KEY = 'nimbus.settings.v1';
+
+  // ?stream=https://… overrides the baked-in config, handy for testing a URL
+  // before committing it to js/config.js.
+  const streamParam = new URLSearchParams(location.search).get('stream');
+
+  const defaults = {
+    theme: 'light',
+    wall: 'bloom',
+    accent: '#0067c0',
+    user: 'Nimbus user',
+    installed: [], // app ids added from the Store
+    desktop: ['brave', 'store', 'notepad'],
+    streamUrl: streamParam || config.streamUrl || '', // streamed browser URL
+  };
+
+  // Brave Origin replaced the old Browser shortcut; existing desktops get the
+  // new app in the same slot instead of a duplicate or a missing icon.
+  function upgradeDesktop(list) {
+    const desktop = Array.isArray(list) ? [...list] : [...defaults.desktop];
+    if (desktop.includes('browser') && !desktop.includes('brave')) {
+      desktop[desktop.indexOf('browser')] = 'brave';
+    }
+    return desktop;
+  }
+
+  function read() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return { ...defaults };
+      const parsed = JSON.parse(raw);
+      return {
+        ...defaults,
+        ...parsed,
+        streamUrl: streamParam || config.streamUrl || parsed.streamUrl || '',
+        installed: Array.isArray(parsed.installed) ? parsed.installed : [],
+        desktop: upgradeDesktop(parsed.desktop),
+      };
+    } catch {
+      return { ...defaults };
+    }
+  }
+
+  const prefs = read();
+
+  const subs = new Set();
+
+  function onPrefsChange(fn) {
+    subs.add(fn);
+    return () => subs.delete(fn);
+  }
+
+  function savePrefs(patch = {}) {
+    Object.assign(prefs, patch);
+    try {
+      localStorage.setItem(KEY, JSON.stringify(prefs));
+    } catch {
+      /* storage can be full or blocked; preferences just won't persist */
+    }
+    subs.forEach((fn) => fn(prefs));
+    return prefs;
+  }
+
+  function resetPrefs() {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {
+      /* ignore */
+    }
+    Object.assign(prefs, read());
+    subs.forEach((fn) => fn(prefs));
+  }
+
+  function isInstalled(app) {
+    if (!app) return false;
+    return Boolean(app.builtin) || prefs.installed.includes(app.id);
+  }
+
+  function installApp(id) {
+    if (prefs.installed.includes(id)) return;
+    savePrefs({ installed: [...prefs.installed, id] });
+  }
+
+  function uninstallApp(id) {
+    savePrefs({
+      installed: prefs.installed.filter((x) => x !== id),
+      desktop: prefs.desktop.filter((x) => x !== id),
+    });
+  }
+
+  function toggleDesktopShortcut(id) {
+    const has = prefs.desktop.includes(id);
+    if (has && prefs.desktop.length === 1) return; // keep at least one shortcut
+    savePrefs({ desktop: has ? prefs.desktop.filter((x) => x !== id) : [...prefs.desktop, id] });
+  }
+
+  /** Applies theme, accent and wallpaper from prefs to <html>. */
+  function applyAppearance() {
+    const root = document.documentElement;
+    root.dataset.theme = prefs.theme;
+    root.dataset.wall = prefs.wall;
+    root.style.setProperty('--accent', prefs.accent);
+  }
+  __exports.prefs = prefs;
+  __exports.onPrefsChange = onPrefsChange;
+  __exports.savePrefs = savePrefs;
+  __exports.resetPrefs = resetPrefs;
+  __exports.isInstalled = isInstalled;
+  __exports.installApp = installApp;
+  __exports.uninstallApp = uninstallApp;
+  __exports.toggleDesktopShortcut = toggleDesktopShortcut;
+  __exports.applyAppearance = applyAppearance;
+};
+
+__defs['apps/browser.js'] = function (__exports, __req) {
+  // Browser — frame-based preview browser plus an optional streamed (remote) browser.
+  const { defineApp } = __req('registry.js');
+  const { prefs, savePrefs } = __req('state.js');
+
+  // Served by GitHub Pages alongside the desktop, so the browser app has a real
+  // home page with no server behind it.
+  const HOME_PAGE = 'start.html';
+
+  const QUICK_LINKS = [
+    { name: 'Hacker News', host: 'news.ycombinator.com', url: 'https://news.ycombinator.com/' },
+    { name: 'NPR Text', host: 'text.npr.org', url: 'https://text.npr.org/' },
+    { name: 'Example Domain', host: 'example.com', url: 'https://example.com/' },
+    {
+      name: 'OpenStreetMap',
+      host: 'embeddable map',
+      url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.1453%2C51.4875%2C-0.0953%2C51.5175&layer=mapnik',
+    },
+  ];
+
+  const GLYPH = {
+    back: '<svg viewBox="0 0 24 24" class="icon"><path d="M14.5 5 8 12l6.5 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    forward:
+      '<svg viewBox="0 0 24 24" class="icon"><path d="M9.5 5 16 12l-6.5 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    reload:
+      '<svg viewBox="0 0 24 24" class="icon"><path d="M19 12a7 7 0 1 1-2.1-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.5 4v4.5H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    home: '<svg viewBox="0 0 24 24" class="icon"><path d="M4 11 12 4l8 7v9h-6v-6h-4v6H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+    external:
+      '<svg viewBox="0 0 24 24" class="icon"><path d="M14 4h6v6M20 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    stream:
+      '<svg viewBox="0 0 24 24" class="icon"><rect x="2.5" y="4.5" width="19" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 20h8M12 16.5V20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M9.5 12.2a4 4 0 0 1 5 0M7.6 9.8a7 7 0 0 1 8.8 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  };
+
+  defineApp({
+    id: 'browser',
+    name: 'Browser',
+    icon: 'browser',
+    category: 'Internet',
+    builtin: true,
+    description: 'Browse the web in a tabbed frame',
+    width: 940,
+    height: 640,
+    minWidth: 480,
+    minHeight: 320,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="browser">
+          <div class="browser-bar">
+            <button type="button" class="browser-btn" data-act="back" title="Back" disabled>${GLYPH.back}</button>
+            <button type="button" class="browser-btn" data-act="forward" title="Forward" disabled>${GLYPH.forward}</button>
+            <button type="button" class="browser-btn" data-act="reload" title="Reload">${GLYPH.reload}</button>
+            <button type="button" class="browser-btn" data-act="home" title="Home">${GLYPH.home}</button>
+            <button type="button" class="browser-btn" data-act="stream" title="Streamed browser">${GLYPH.stream}</button>
+            <input class="browser-url" spellcheck="false" autocomplete="off" aria-label="Address bar" placeholder="Search or enter a web address">
+            <button type="button" class="browser-btn" data-act="external" title="Open in a real tab">${GLYPH.external}</button>
+          </div>
+          <div class="browser-view">
+            <iframe title="Web content" referrerpolicy="no-referrer" allow="fullscreen; autoplay; clipboard-write; encrypted-media"></iframe>
+            <div class="browser-start">
+              <h1>Where to?</h1>
+              <p>This is a frame-based preview browser. Pages that send <code>X-Frame-Options</code> or a restrictive
+                <code>frame-ancestors</code> policy — which is most big sites — will refuse to load here. A proxy server is
+                required to get past that, and GitHub Pages cannot host one.</p>
+              <div class="quick-grid"></div>
+              <div class="browser-note">
+                Try a site that allows embedding, or press the open-in-tab button to view a page outside the desktop.
+              </div>
+              <button type="button" class="btn" data-act="stream-open" style="margin-top:14px">Connect a streamed browser…</button>
+            </div>
+            <div class="browser-stream" hidden>
+              <h3>Streamed browser</h3>
+              <p>Point Nimbus at a remote browser you host yourself — for example Firefox or Chromium streamed by
+                Selkies on a small VM. The URL must be <code>https://</code> and must allow being framed.</p>
+              <input class="stream-url" type="url" spellcheck="false" placeholder="https://browser.example.com/">
+              <div class="row" style="margin-top:10px">
+                <button type="button" class="btn primary" data-act="stream-save">Connect</button>
+                <button type="button" class="btn" data-act="stream-cancel">Cancel</button>
+              </div>
+              <div class="browser-note" style="margin-top:14px">
+                Saved in this browser only. If the page stays blank, the host is refusing framing
+                (<code>X-Frame-Options</code> / <code>frame-ancestors</code>) or using a self-signed certificate.
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      const frame = win.body.querySelector('iframe');
+      const startPage = win.body.querySelector('.browser-start');
+      const urlBar = win.body.querySelector('.browser-url');
+      const back = win.body.querySelector('[data-act="back"]');
+      const fwd = win.body.querySelector('[data-act="forward"]');
+      const grid = win.body.querySelector('.quick-grid');
+
+      const history = [];
+      let index = -1;
+
+      QUICK_LINKS.forEach((link) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'quick';
+        btn.innerHTML = '<strong></strong><span></span>';
+        btn.querySelector('strong').textContent = link.name;
+        btn.querySelector('span').textContent = link.host;
+        btn.addEventListener('click', () => navigate(link.url));
+        grid.appendChild(btn);
+      });
+
+      function syncButtons() {
+        back.disabled = index <= 0;
+        fwd.disabled = index >= history.length - 1;
+      }
+
+      function showStart() {
+        frame.hidden = true;
+        startPage.hidden = false;
+        urlBar.value = '';
+        syncButtons();
+        win.setTitle('Browser');
+      }
+
+      function load(url, push) {
+        frame.hidden = false;
+        startPage.hidden = true;
+        frame.src = url;
+        urlBar.value = url;
+        win.setTitle(`Browser — ${url.replace(/^https?:\/\//, '').split('/')[0]}`);
+        if (push) {
+          history.splice(index + 1);
+          history.push(url);
+          index = history.length - 1;
+        }
+        syncButtons();
+      }
+
+      function normalize(input) {
+        const text = input.trim();
+        if (!text) return '';
+        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return text;
+        if (/^[\w-]+(\.[\w-]+)+(\/|$)/.test(text)) return `https://${text}`;
+        return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(text)}`;
+      }
+
+      function navigate(input) {
+        const url = normalize(input);
+        if (!url) return;
+        load(url, true);
+      }
+
+      urlBar.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        navigate(urlBar.value);
+      });
+
+      win.body.querySelector('[data-act="back"]').addEventListener('click', () => {
+        if (index > 0) {
+          index -= 1;
+          load(history[index], false);
+        }
+      });
+      win.body.querySelector('[data-act="forward"]').addEventListener('click', () => {
+        if (index < history.length - 1) {
+          index += 1;
+          load(history[index], false);
+        }
+      });
+      win.body.querySelector('[data-act="reload"]').addEventListener('click', () => {
+        if (!frame.hidden) frame.src = frame.src;
+      });
+      win.body.querySelector('[data-act="home"]').addEventListener('click', () => {
+        frame.hidden = false;
+        startPage.hidden = true;
+        frame.src = HOME_PAGE;
+        urlBar.value = '';
+        win.setTitle('New tab');
+        syncButtons();
+      });
+      win.body.querySelector('[data-act="external"]').addEventListener('click', () => {
+        const url = urlBar.value.trim();
+        if (url) window.open(normalize(url), '_blank', 'noopener');
+      });
+
+      const streamPanel = win.body.querySelector('.browser-stream');
+      const streamInput = win.body.querySelector('.stream-url');
+
+      function openStreamPanel() {
+        streamPanel.hidden = false;
+        streamInput.style.borderColor = '';
+        streamInput.value = prefs.streamUrl || '';
+        streamInput.focus();
+        streamInput.select();
+      }
+
+      win.body.querySelector('[data-act="stream"]').addEventListener('click', () => {
+        if (streamPanel.hidden) openStreamPanel();
+        else streamPanel.hidden = true;
+      });
+      win.body.querySelector('[data-act="stream-open"]').addEventListener('click', openStreamPanel);
+      win.body.querySelector('[data-act="stream-cancel"]').addEventListener('click', () => {
+        streamPanel.hidden = true;
+      });
+      win.body.querySelector('[data-act="stream-save"]').addEventListener('click', () => {
+        const url = streamInput.value.trim();
+        if (!/^https?:\/\//i.test(url)) {
+          streamInput.style.borderColor = '#c42b1c';
+          streamInput.focus();
+          return;
+        }
+        savePrefs({ streamUrl: url });
+        streamPanel.hidden = true;
+        load(url, true);
+        win.setTitle(`Streamed — ${url.replace(/^https?:\/\//, '').split('/')[0]}`);
+      });
+      streamInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') win.body.querySelector('[data-act="stream-save"]').click();
+        if (e.key === 'Escape') streamPanel.hidden = true;
+      });
+
+      frame.addEventListener('load', () => {
+        if (frame.hidden) return;
+        try {
+          const title = frame.contentDocument && frame.contentDocument.title;
+          if (title) win.setTitle(`${title} — Browser`);
+        } catch {
+          /* cross-origin, title is unreadable — expected */
+        }
+      });
+
+      if (prefs.streamUrl) {
+        load(prefs.streamUrl, true);
+        win.setTitle(`Streamed — ${prefs.streamUrl.replace(/^https?:\/\//, '').split('/')[0]}`);
+      } else {
+        // No stream configured: open the Pages-hosted start page instead of an
+        // empty frame.
+        frame.src = HOME_PAGE;
+        win.setTitle('New tab');
+      }
+    },
+  });
+
+};
+
+__defs['apps/brave.js'] = function (__exports, __req) {
+  // Brave Origin — the streamed Brave Origin browser, as a first-class app.
+  //
+  // The browser itself runs on the Android phone (Brave Origin + Xvfb + x11vnc +
+  // noVNC) and is published through a cloudflared tunnel. This app frames that
+  // noVNC session, so the window really is Brave Origin running on the desktop.
+  const { defineApp } = __req('registry.js');
+  const { prefs, savePrefs } = __req('state.js');
+
+  const GLYPH = {
+    reload:
+      '<svg viewBox="0 0 24 24" class="icon"><path d="M19 12a7 7 0 1 1-2.1-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.5 4v4.5H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    external:
+      '<svg viewBox="0 0 24 24" class="icon"><path d="M14 4h6v6M20 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    stream:
+      '<svg viewBox="0 0 24 24" class="icon"><rect x="2.5" y="4.5" width="19" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 20h8M12 16.5V20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M9.5 12.2a4 4 0 0 1 5 0M7.6 9.8a7 7 0 0 1 8.8 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  };
+
+  defineApp({
+    id: 'brave',
+    name: 'Brave Origin',
+    icon: 'brave',
+    category: 'Internet',
+    builtin: true,
+    description: 'Brave Origin, streamed live from your phone',
+    width: 1020,
+    height: 680,
+    minWidth: 520,
+    minHeight: 360,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="brave">
+          <div class="brave-bar">
+            <button type="button" class="browser-btn" data-act="reload" title="Reload the stream">${GLYPH.reload}</button>
+            <div class="brave-url" data-url>Not connected</div>
+            <button type="button" class="browser-btn" data-act="setup" title="Stream address">${GLYPH.stream}</button>
+            <button type="button" class="browser-btn" data-act="external" title="Open the stream in a real tab">${GLYPH.external}</button>
+          </div>
+          <div class="brave-view">
+            <iframe data-frame title="Brave Origin"
+              allow="clipboard-read; clipboard-write; fullscreen; autoplay; encrypted-media"></iframe>
+            <div class="brave-empty" data-empty hidden>
+              <h3>Brave Origin</h3>
+              <p>This window shows the real Brave Origin running on your phone, streamed over a
+                Cloudflare tunnel. Paste the tunnel link — the one ending in
+                <code>vnc.html?autoconnect=true&amp;resize=remote</code> — and it opens here.</p>
+              <input class="stream-url" data-input type="url" spellcheck="false"
+                placeholder="https://random-words.trycloudflare.com/vnc.html?autoconnect=true&amp;resize=remote">
+              <div class="row" style="margin-top:12px">
+                <button type="button" class="btn primary" data-act="save">Connect</button>
+                <button type="button" class="btn" data-act="cancel">Cancel</button>
+              </div>
+              <p class="brave-hint">The address changes every time the phone restarts the tunnel.</p>
+            </div>
+          </div>
+        </div>`;
+
+      const frame = win.body.querySelector('[data-frame]');
+      const urlText = win.body.querySelector('[data-url]');
+      const empty = win.body.querySelector('[data-empty]');
+      const input = win.body.querySelector('[data-input]');
+
+      function hostOf(url) {
+        try {
+          return new URL(url).host;
+        } catch {
+          return url;
+        }
+      }
+
+      function connect(url) {
+        if (!url) return showSetup(true);
+        empty.hidden = true;
+        frame.hidden = false;
+        frame.src = url;
+        urlText.textContent = hostOf(url);
+        win.setTitle(`Brave Origin — ${hostOf(url)}`);
+      }
+
+      function showSetup(selectText) {
+        empty.hidden = false;
+        frame.hidden = true;
+        input.value = prefs.streamUrl || '';
+        urlText.textContent = prefs.streamUrl ? hostOf(prefs.streamUrl) : 'Not connected';
+        win.setTitle('Brave Origin');
+        if (selectText) {
+          input.focus();
+          input.select();
+        }
+      }
+
+      function save() {
+        const url = input.value.trim();
+        if (!/^https?:\/\//i.test(url)) {
+          input.style.borderColor = '#c42b1c';
+          input.focus();
+          return;
+        }
+        input.style.borderColor = '';
+        savePrefs({ streamUrl: url });
+        connect(url);
+      }
+
+      win.body.querySelector('[data-act="reload"]').addEventListener('click', () => {
+        if (!prefs.streamUrl) return showSetup(true);
+        empty.hidden = true;
+        frame.hidden = false;
+        frame.src = prefs.streamUrl;
+      });
+      win.body.querySelector('[data-act="setup"]').addEventListener('click', () => showSetup(true));
+      win.body.querySelector('[data-act="cancel"]').addEventListener('click', () => {
+        if (prefs.streamUrl) {
+          empty.hidden = true;
+          frame.hidden = false;
+        } else {
+          showSetup(false);
+        }
+      });
+      win.body.querySelector('[data-act="external"]').addEventListener('click', () => {
+        const url = prefs.streamUrl || input.value.trim();
+        if (url) window.open(url, '_blank', 'noopener');
+      });
+      win.body.querySelector('[data-act="save"]').addEventListener('click', save);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') save();
+      });
+
+      if (prefs.streamUrl) connect(prefs.streamUrl);
+      else showSetup(false);
+    },
+  });
+
+};
+
+__defs['apps/notepad.js'] = function (__exports, __req) {
+  // Notepad — autosaving plain-text editor backed by localStorage.
+  const { defineApp } = __req('registry.js');
+
+  const KEY = 'nimbus.notepad';
+
+  defineApp({
+    id: 'notepad',
+    name: 'Notepad',
+    icon: 'notepad',
+    category: 'Productivity',
+    builtin: true,
+    description: 'Write notes that stay in this browser',
+    width: 720,
+    height: 540,
+    minWidth: 380,
+    minHeight: 280,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="notepad">
+          <div class="notepad-bar">
+            <button type="button" class="btn ghost" data-act="new">New</button>
+            <button type="button" class="btn ghost" data-act="download">Save as .txt</button>
+            <span class="spacer"></span>
+            <span data-el="state" style="font-size:11px;color:var(--text-2)">Saved</span>
+          </div>
+          <textarea spellcheck="false" aria-label="Note text" placeholder="Start typing. Your note is saved automatically."></textarea>
+          <div class="statusbar">
+            <span data-el="words">0 words</span>
+            <span data-el="chars">0 characters</span>
+          </div>
+        </div>`;
+
+      const area = win.body.querySelector('textarea');
+      const state = win.body.querySelector('[data-el="state"]');
+      const words = win.body.querySelector('[data-el="words"]');
+      const chars = win.body.querySelector('[data-el="chars"]');
+      let timer = null;
+
+      try {
+        area.value = localStorage.getItem(KEY) || '';
+      } catch {
+        area.value = '';
+      }
+
+      function updateCounts() {
+        const text = area.value;
+        chars.textContent = `${text.length} character${text.length === 1 ? '' : 's'}`;
+        const n = text.trim() ? text.trim().split(/\s+/).length : 0;
+        words.textContent = `${n} word${n === 1 ? '' : 's'}`;
+        win.setTitle(text ? `${text.trim().split('\n')[0].slice(0, 32) || 'Untitled'} — Notepad` : 'Notepad');
+      }
+
+      function persist() {
+        try {
+          localStorage.setItem(KEY, area.value);
+          state.textContent = 'Saved';
+        } catch {
+          state.textContent = 'Could not save (storage full)';
+        }
+      }
+
+      area.addEventListener('input', () => {
+        updateCounts();
+        state.textContent = 'Saving…';
+        clearTimeout(timer);
+        timer = setTimeout(persist, 400);
+      });
+
+      win.body.querySelector('[data-act="new"]').addEventListener('click', () => {
+        area.value = '';
+        updateCounts();
+        persist();
+        area.focus();
+      });
+
+      win.body.querySelector('[data-act="download"]').addEventListener('click', () => {
+        const blob = new Blob([area.value], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'nimbus-note.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+
+      updateCounts();
+      setTimeout(() => area.focus(), 60);
+    },
+  });
+
+};
+
+__defs['apps/calculator.js'] = function (__exports, __req) {
+  // Calculator — standard mode, keyboard friendly.
+  const { defineApp } = __req('registry.js');
+
+  const KEYS = [
+    ['%', 'fn'], ['CE', 'fn'], ['C', 'fn'], ['⌫', 'fn'],
+    ['1/x', 'fn'], ['x²', 'fn'], ['√x', 'fn'], ['÷', 'fn'],
+    ['7', ''], ['8', ''], ['9', ''], ['×', 'fn'],
+    ['4', ''], ['5', ''], ['6', ''], ['−', 'fn'],
+    ['1', ''], ['2', ''], ['3', ''], ['+', 'fn'],
+    ['±', 'fn'], ['0', ''], ['.', ''], ['=', 'eq'],
+  ];
+
+  defineApp({
+    id: 'calculator',
+    name: 'Calculator',
+    icon: 'calculator',
+    category: 'Utilities',
+    builtin: true,
+    description: 'Standard arithmetic calculator',
+    width: 340,
+    height: 500,
+    minWidth: 280,
+    minHeight: 420,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="calc">
+          <div class="calc-mode">Standard</div>
+          <div class="calc-sub" data-el="sub"></div>
+          <div class="calc-display" data-el="display">0</div>
+          <div class="calc-keys"></div>
+        </div>`;
+
+      const display = win.body.querySelector('[data-el="display"]');
+      const sub = win.body.querySelector('[data-el="sub"]');
+      const keys = win.body.querySelector('.calc-keys');
+
+      let acc = null;
+      let op = null;
+      let cur = '0';
+      let typing = false;
+
+      function fmt(n) {
+        if (!Number.isFinite(n)) return 'Cannot divide by zero';
+        const rounded = Math.round(n * 1e10) / 1e10;
+        return String(rounded);
+      }
+
+      function render() {
+        display.textContent = cur;
+        sub.textContent = acc !== null && op ? `${fmt(acc)} ${op}` : '';
+      }
+
+      function compute(a, b, operator) {
+        if (operator === '+') return a + b;
+        if (operator === '−') return a - b;
+        if (operator === '×') return a * b;
+        if (operator === '÷') return b === 0 ? NaN : a / b;
+        return b;
+      }
+
+      function press(key) {
+        if (/^[0-9]$/.test(key)) {
+          if (!typing) {
+            cur = key;
+            typing = true;
+          } else {
+            cur = cur === '0' ? key : cur + key;
+          }
+        } else if (key === '.') {
+          if (!typing) {
+            cur = '0.';
+            typing = true;
+          } else if (!cur.includes('.')) {
+            cur += '.';
+          }
+        } else if (['+', '−', '×', '÷'].includes(key)) {
+          if (op && typing) {
+            const result = compute(Number(acc), Number(cur), op);
+            acc = Number.isFinite(result) ? result : NaN;
+            cur = fmt(acc);
+          } else {
+            acc = Number(cur);
+          }
+          op = key;
+          typing = false;
+        } else if (key === '=') {
+          if (op) {
+            const result = compute(Number(acc), Number(cur), op);
+            cur = fmt(result);
+            acc = null;
+            op = null;
+            typing = false;
+          }
+        } else if (key === 'C') {
+          acc = null;
+          op = null;
+          cur = '0';
+          typing = false;
+        } else if (key === 'CE') {
+          cur = '0';
+          typing = false;
+        } else if (key === '⌫') {
+          if (typing) {
+            cur = cur.length > 1 ? cur.slice(0, -1) : '0';
+            if (cur === '-') cur = '0';
+          }
+        } else if (key === '%') {
+          cur = fmt(Number(cur) / 100);
+          typing = false;
+        } else if (key === '1/x') {
+          cur = fmt(1 / Number(cur));
+          typing = false;
+        } else if (key === 'x²') {
+          cur = fmt(Number(cur) ** 2);
+          typing = false;
+        } else if (key === '√x') {
+          cur = fmt(Math.sqrt(Number(cur)));
+          typing = false;
+        } else if (key === '±') {
+          cur = fmt(-Number(cur));
+          typing = false;
+        }
+        render();
+      }
+
+      KEYS.forEach(([label, cls]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (cls) btn.className = cls;
+        btn.addEventListener('click', () => press(label));
+        keys.appendChild(btn);
+      });
+
+      win.el.addEventListener('keydown', (e) => {
+        const map = { '*': '×', '/': '÷', '-': '−', '+': '+', Enter: '=', '=': '=', Backspace: '⌫', Escape: 'C', '.': '.' };
+        if (/^[0-9]$/.test(e.key)) {
+          press(e.key);
+          e.preventDefault();
+        } else if (map[e.key]) {
+          press(map[e.key]);
+          e.preventDefault();
+        }
+      });
+      win.el.tabIndex = -1;
+      setTimeout(() => win.el.focus(), 50);
+
+      render();
+    },
+  });
+
+};
+
+__defs['icons.js'] = function (__exports, __req) {
+  // Inline SVG icon set — no binary assets, so the whole OS is plain text on GitHub Pages.
+  const icons = {
+    browser:
+      '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#1a73e8"/><ellipse cx="16" cy="16" rx="13" ry="5.6" fill="none" stroke="rgba(255,255,255,.86)" stroke-width="1.5"/><path d="M16 3v26" stroke="rgba(255,255,255,.86)" stroke-width="1.5"/></svg>',
+    brave:
+      '<svg viewBox="0 0 32 32"><path d="M16 2.6 6.4 4.7 3.7 10.3l1.9 10.1L16 29.4l10.4-9 1.9-10.1-2.7-5.6z" fill="#FB542B"/><path d="M10.4 8.2 13.3 9.7 16 7.3 18.7 9.7 21.6 8.2 23.2 11.4c.7 2.3-.2 4.6-2.1 6.2l-2.5 2.1L16 22.6l-2.6-2.9-2.5-2.1c-1.9-1.6-2.8-3.9-2.1-6.2z" fill="#fff"/><ellipse cx="13.3" cy="13.2" rx="1.15" ry="0.8" fill="#FB542B" transform="rotate(-20 13.3 13.2)"/><ellipse cx="18.7" cy="13.2" rx="1.15" ry="0.8" fill="#FB542B" transform="rotate(20 18.7 13.2)"/><path d="M16 15.2 17.1 16.6h-2.2z" fill="#FB542B"/></svg>',
+    store:
+      '<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="7" fill="#0f7b8a"/><path d="M12 13V10.5a4 4 0 0 1 8 0V13" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><path d="M8.5 12.5h15l-1.4 11a3 3 0 0 1-3 2.6h-6.2a3 3 0 0 1-3-2.6z" fill="#fff" opacity=".93"/></svg>',
+    notepad:
+      '<svg viewBox="0 0 32 32"><rect x="6" y="3" width="20" height="26" rx="4" fill="#fdfdff" stroke="#c3cada"/><path d="M6 7a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v3H6z" fill="#3b82f6"/><g stroke="#c7cfdf" stroke-width="1.7" stroke-linecap="round"><path d="M11 15h10M11 19h10M11 23h6"/></g></svg>',
+    calculator:
+      '<svg viewBox="0 0 32 32"><rect x="5" y="3" width="22" height="26" rx="5" fill="#2b2f3a"/><rect x="8.5" y="6.5" width="15" height="6" rx="2" fill="#9fe3b5"/><g fill="#e8ecf4"><rect x="8.5" y="15" width="4.4" height="4" rx="1.2"/><rect x="14" y="15" width="4.4" height="4" rx="1.2"/><rect x="19.5" y="15" width="4.4" height="4" rx="1.2"/><rect x="8.5" y="21" width="4.4" height="4" rx="1.2"/><rect x="14" y="21" width="4.4" height="4" rx="1.2"/><rect x="19.5" y="21" width="4.4" height="4" rx="1.2"/></g></svg>',
+    terminal:
+      '<svg viewBox="0 0 32 32"><rect x="3" y="4" width="26" height="24" rx="5" fill="#1c2430"/><path d="M8 12l4 4-4 4" stroke="#4cc2ff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 20h9" stroke="#9fb3c8" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    settings:
+      '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="9.5" fill="none" stroke="#7d8798" stroke-width="4.8" stroke-dasharray="3.3 3.1"/><circle cx="16" cy="16" r="5" fill="#c7cdda"/></svg>',
+    paint:
+      '<svg viewBox="0 0 32 32"><path d="M16 3a13 13 0 0 0 0 26c3.1 0 4-1.9 3-4.1-.9-2 .6-3.4 3.4-3.4H26a3 3 0 0 0 3-3A13 13 0 0 0 16 3z" fill="#f5f7fc" stroke="#a7b0c2"/><circle cx="11" cy="11" r="2.2" fill="#ef5350"/><circle cx="18" cy="9" r="2.2" fill="#ffb300"/><circle cx="9" cy="18" r="2.2" fill="#42a5f5"/><circle cx="17" cy="16.5" r="2.2" fill="#66bb6a"/></svg>',
+    snake:
+      '<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="6" fill="#123d24"/><g fill="#6fce8f"><rect x="7" y="7" width="5" height="5" rx="1"/><rect x="12" y="7" width="5" height="5" rx="1"/><rect x="12" y="12" width="5" height="5" rx="1"/><rect x="17" y="12" width="5" height="5" rx="1"/></g><circle cx="23.5" cy="21" r="3" fill="#ff6b6b"/></svg>',
+    weather:
+      '<svg viewBox="0 0 32 32"><circle cx="12" cy="11.5" r="6.5" fill="#ffca28"/><path d="M9 25a6 6 0 0 1 .8-11.9A7.5 7.5 0 0 1 24 15.4 4.8 4.8 0 0 1 23.4 25z" fill="#eaf2fc" stroke="#b3c5db"/></svg>',
+    clock:
+      '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#2f6fed"/><circle cx="16" cy="16" r="10" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.3"/><path d="M16 9v7.4l5 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+    tasks:
+      '<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="6" fill="#3b4a5a"/><rect x="8.5" y="9" width="15" height="3" rx="1.5" fill="#9fe3b5"/><rect x="8.5" y="14.5" width="15" height="3" rx="1.5" fill="#e8ecf4"/><rect x="8.5" y="20" width="10" height="3" rx="1.5" fill="#a9b6c7"/></svg>',
+    app:
+      '<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="6" fill="#5b6472"/><rect x="9" y="9" width="14" height="14" rx="3" fill="rgba(255,255,255,.85)"/></svg>',
+  };
+
+  function iconSVG(name, cls = 'icon') {
+    const svg = icons[name] || icons.app;
+    return svg.replace('<svg ', `<svg class="${cls}" `);
+  }
+  __exports.icons = icons;
+  __exports.iconSVG = iconSVG;
+};
+
+__defs['wm.js'] = function (__exports, __req) {
+  // Window manager: creation, focus/z-order, drag, resize, minimize, maximize.
+  const { getApp } = __req('registry.js');
+  const { iconSVG } = __req('icons.js');
+
+  let zTop = 100;
+  let cascade = 0;
+  let activeId = null;
+  const windows = [];
+  const listeners = new Set();
+
+  function screenEl() {
+    return document.getElementById('screen');
+  }
+
+  function onWindowsChange(fn) {
+    listeners.add(fn);
+    fn(windows, activeId);
+    return () => listeners.delete(fn);
+  }
+
+  function notify() {
+    for (const fn of listeners) fn(windows, activeId);
+  }
+
+  function getWindows() {
+    return windows;
+  }
+
+  function getActiveId() {
+    return activeId;
+  }
+
+  function findWindow(appId) {
+    return windows.find((w) => w.appId === appId && !w.closed) || null;
+  }
+
+  class Win {
+    constructor(options = {}) {
+      const {
+        appId = 'app',
+        title = 'Window',
+        icon = 'app',
+        width = 760,
+        height = 520,
+        minWidth = 340,
+        minHeight = 220,
+        onClose = null,
+      } = options;
+
+      this.id = `win-${Math.random().toString(36).slice(2, 9)}`;
+      this.appId = appId;
+      this.title = title;
+      this.icon = icon;
+      this.minWidth = minWidth;
+      this.minHeight = minHeight;
+      this.minimized = false;
+      this.maximized = false;
+      this.closed = false;
+      this.prevRect = null;
+      this.onClose = onClose;
+
+      const screen = screenEl();
+      const sw = screen.clientWidth;
+      const sh = screen.clientHeight;
+      const w = Math.min(width, Math.max(320, sw - 32));
+      const h = Math.min(height, Math.max(220, sh - 32));
+      const drift = (cascade++ % 6) * 24;
+      const left = Math.min(Math.max(12, Math.round((sw - w) / 2) - 48 + drift), Math.max(12, sw - w - 12));
+      const top = Math.min(Math.max(12, Math.round((sh - h) / 2) - 40 + drift), Math.max(12, sh - h - 12));
+
+      const el = document.createElement('div');
+      el.className = 'window opening';
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+      el.style.zIndex = String(++zTop);
+      el.innerHTML = `
+        <div class="titlebar">
+          <div class="tb-icon">${iconSVG(icon)}</div>
+          <div class="tb-title"></div>
+          <div class="tb-controls">
+            <button type="button" class="min" title="Minimize" aria-label="Minimize">
+              <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" stroke-width="1"/></svg>
+            </button>
+            <button type="button" class="max" title="Maximize" aria-label="Maximize">
+              <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor"/></svg>
+            </button>
+            <button type="button" class="close" title="Close" aria-label="Close">
+              <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="window-body"></div>
+        <div class="resize-handle" title="Resize"></div>`;
+
+      this.el = el;
+      this.body = el.querySelector('.window-body');
+      this.titleEl = el.querySelector('.tb-title');
+      this.titleEl.textContent = title;
+      this.iconEl = el.querySelector('.tb-icon');
+
+      const titlebar = el.querySelector('.titlebar');
+      el.querySelector('.min').addEventListener('click', () => this.minimize());
+      el.querySelector('.max').addEventListener('click', () => this.toggleMaximize());
+      el.querySelector('.close').addEventListener('click', () => this.close());
+      el.addEventListener('pointerdown', () => this.focus(), true);
+
+      titlebar.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.tb-controls')) return;
+        this.toggleMaximize();
+      });
+      titlebar.addEventListener('pointerdown', (e) => this.startDrag(e));
+
+      const handle = el.querySelector('.resize-handle');
+      handle.addEventListener('pointerdown', (e) => this.startResize(e));
+
+      document.getElementById('window-layer').appendChild(el);
+      windows.push(this);
+      this.focus();
+      setTimeout(() => el.classList.remove('opening'), 200);
+    }
+
+    setTitle(text) {
+      this.title = text;
+      this.titleEl.textContent = text;
+      notify();
+    }
+
+    setIcon(icon) {
+      this.icon = icon;
+      this.iconEl.innerHTML = iconSVG(icon);
+    }
+
+    focus() {
+      if (this.closed) return;
+      if (this.minimized) this.restore();
+      windows.forEach((w) => {
+        w.el.classList.toggle('active', w === this);
+      });
+      this.el.style.zIndex = String(++zTop);
+      activeId = this.id;
+      notify();
+    }
+
+    minimize() {
+      this.minimized = true;
+      this.el.classList.add('minimized');
+      const next = [...windows].reverse().find((w) => w !== this && !w.minimized && !w.closed);
+      if (next) {
+        next.focus();
+      } else {
+        activeId = null;
+        notify();
+      }
+    }
+
+    restore() {
+      if (!this.minimized) return;
+      this.minimized = false;
+      this.el.classList.remove('minimized');
+      this.focus();
+    }
+
+    toggle() {
+      if (this.minimized) this.restore();
+      else if (activeId === this.id) this.minimize();
+      else this.focus();
+    }
+
+    maximize() {
+      if (this.maximized) return;
+      const s = screenEl().getBoundingClientRect();
+      const r = this.el.getBoundingClientRect();
+      this.prevRect = { left: r.left - s.left, top: r.top - s.top, width: r.width, height: r.height };
+      this.maximized = true;
+      this.el.classList.add('maximized');
+      Object.assign(this.el.style, {
+        left: '0px',
+        top: '0px',
+        width: `${s.width}px`,
+        height: `${s.height}px`,
+      });
+      notify();
+    }
+
+    unmaximize() {
+      if (!this.maximized) return;
+      this.maximized = false;
+      this.el.classList.remove('maximized');
+      const p = this.prevRect || { left: 60, top: 60, width: 760, height: 520 };
+      Object.assign(this.el.style, {
+        left: `${p.left}px`,
+        top: `${p.top}px`,
+        width: `${p.width}px`,
+        height: `${p.height}px`,
+      });
+      this.prevRect = null;
+      notify();
+    }
+
+    toggleMaximize() {
+      if (this.maximized) this.unmaximize();
+      else this.maximize();
+    }
+
+    startDrag(e) {
+      if (e.button !== 0 || e.target.closest('.tb-controls')) return;
+      this.focus();
+      const screen = screenEl();
+      const sRect = screen.getBoundingClientRect();
+
+      if (this.maximized) {
+        const r = this.el.getBoundingClientRect();
+        this.unmaximize();
+        this.el.style.left = `${Math.max(0, e.clientX - sRect.left - r.width / 2)}px`;
+        this.el.style.top = `${Math.max(0, e.clientY - sRect.top - 20)}px`;
+      }
+
+      const rect = this.el.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+      this.el.classList.add('dragging');
+
+      const move = (ev) => {
+        const left = ev.clientX - sRect.left - offsetX;
+        const top = ev.clientY - sRect.top - offsetY;
+        const maxLeft = sRect.width - 90;
+        const maxTop = sRect.height - 44;
+        this.el.style.left = `${Math.min(Math.max(left, -rect.width + 90), maxLeft)}px`;
+        this.el.style.top = `${Math.min(Math.max(top, 0), maxTop)}px`;
+      };
+      const up = () => {
+        this.el.classList.remove('dragging');
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    }
+
+    startResize(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.maximized) return;
+      this.focus();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const rect = this.el.getBoundingClientRect();
+      this.el.classList.add('resizing');
+
+      const move = (ev) => {
+        const w = Math.max(this.minWidth, rect.width + ev.clientX - startX);
+        const h = Math.max(this.minHeight, rect.height + ev.clientY - startY);
+        this.el.style.width = `${w}px`;
+        this.el.style.height = `${h}px`;
+      };
+      const up = () => {
+        this.el.classList.remove('resizing');
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    }
+
+    close() {
+      if (this.closed) return;
+      this.closed = true;
+      this.el.remove();
+      const i = windows.indexOf(this);
+      if (i >= 0) windows.splice(i, 1);
+      if (activeId === this.id) {
+        activeId = null;
+        const next = [...windows].reverse().find((w) => !w.minimized);
+        if (next) next.focus();
+      }
+      if (typeof this.onClose === 'function') {
+        try {
+          this.onClose();
+        } catch {
+          /* app cleanup must never break the shell */
+        }
+      }
+      notify();
+    }
+  }
+
+  /** Opens an app by id, reusing its window when the app is single-instance. */
+  function openApp(appId) {
+    const app = getApp(appId);
+    if (!app) {
+      console.warn(`[nimbus] unknown app: ${appId}`);
+      return null;
+    }
+    if (app.single !== false) {
+      const existing = findWindow(appId);
+      if (existing) {
+        existing.restore();
+        existing.focus();
+        return existing;
+      }
+    }
+    const win = new Win({
+      appId,
+      title: app.name,
+      icon: app.icon,
+      width: app.width,
+      height: app.height,
+      minWidth: app.minWidth,
+      minHeight: app.minHeight,
+    });
+    try {
+      app.launch(win);
+    } catch (err) {
+      console.error(`[nimbus] ${appId} failed to launch`, err);
+      win.body.innerHTML = `<div style="padding:24px;font:13px/1.6 system-ui;color:#b3261e">
+        <strong>${app.name} crashed on launch.</strong>
+        <p style="color:#666">${String(err && err.message ? err.message : err)}</p>
+      </div>`;
+    }
+    notify();
+    return win;
+  }
+  __exports.onWindowsChange = onWindowsChange;
+  __exports.notify = notify;
+  __exports.getWindows = getWindows;
+  __exports.getActiveId = getActiveId;
+  __exports.findWindow = findWindow;
+  __exports.Win = Win;
+  __exports.openApp = openApp;
+};
+
+__defs['apps/terminal.js'] = function (__exports, __req) {
+  // Terminal — a small shell for the desktop: launch apps, switch theme/wallpaper, inspect state.
+  const { defineApp, listApps, getApp } = __req('registry.js');
+  const { prefs, savePrefs } = __req('state.js');
+  const { openApp } = __req('wm.js');
+
+  const PROMPT = 'nimbus';
+
+  defineApp({
+    id: 'terminal',
+    name: 'Terminal',
+    icon: 'terminal',
+    category: 'System',
+    builtin: true,
+    description: 'Command line for your desktop',
+    width: 720,
+    height: 460,
+    minWidth: 400,
+    minHeight: 240,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="terminal">
+          <div class="term-out"></div>
+          <div class="term-input-row">
+            <span>${PROMPT} &gt;</span>
+            <input spellcheck="false" autocomplete="off" aria-label="Terminal input">
+          </div>
+        </div>`;
+
+      const out = win.body.querySelector('.term-out');
+      const input = win.body.querySelector('input');
+      const history = [];
+      let histIndex = 0;
+
+      function write(text, cls = '') {
+        const line = document.createElement('div');
+        if (cls) line.className = `term-line ${cls}`;
+        line.textContent = text;
+        out.appendChild(line);
+        out.scrollTop = out.scrollHeight;
+      }
+
+      const commands = {
+        help() {
+          return [
+            'Available commands:',
+            '  help                    show this help',
+            '  apps                    list installed apps and their ids',
+            '  open <app-id>           launch an app',
+            '  close                   close the terminal window',
+            '  theme light|dark        switch appearance',
+            '  wall <name>             bloom | sunset | ocean | graphite',
+            '  accent <#hex>           set the accent colour',
+            '  echo <text>             print text',
+            '  date                    print the current date',
+            '  whoami                  print the current user',
+            '  neofetch                about this desktop',
+            '  clear                   clear the screen',
+          ].join('\n');
+        },
+        apps() {
+          return listApps()
+            .map((app) => `  ${app.id.padEnd(12)} ${app.name}${app.builtin ? '  (built in)' : ''}`)
+            .join('\n');
+        },
+        open(args) {
+          if (!args[0]) return 'usage: open <app-id>';
+          const app = getApp(args[0]);
+          if (!app) return `open: no such app: ${args[0]}`;
+          openApp(app.id);
+          return `launching ${app.name}…`;
+        },
+        close() {
+          setTimeout(() => win.close(), 0);
+          return 'closing terminal…';
+        },
+        theme(args) {
+          if (!['light', 'dark'].includes(args[0])) return 'usage: theme light|dark';
+          savePrefs({ theme: args[0] });
+          return `theme set to ${args[0]}`;
+        },
+        wall(args) {
+          if (!['bloom', 'sunset', 'ocean', 'graphite'].includes(args[0])) {
+            return 'usage: wall bloom|sunset|ocean|graphite';
+          }
+          savePrefs({ wall: args[0] });
+          return `wallpaper set to ${args[0]}`;
+        },
+        accent(args) {
+          if (!/^#[0-9a-f]{6}$/i.test(args[0] || '')) return 'usage: accent #0067c0';
+          savePrefs({ accent: args[0] });
+          return `accent set to ${args[0]}`;
+        },
+        echo(args) {
+          return args.join(' ');
+        },
+        date() {
+          return new Date().toString();
+        },
+        whoami() {
+          return prefs.user;
+        },
+        neofetch() {
+          return [
+            '        ####   Nimbus OS 1.0.0',
+            '     ########  shell: windowed (HTML/CSS)',
+            '   ##########  apps : ' + listApps().length + ' registered',
+            '  ############ window: ' + win.id,
+            '   ##########  theme : ' + prefs.theme + ' / ' + prefs.wall,
+            '     ########  engine: your browser',
+            '        ####   storage: localStorage',
+          ].join('\n');
+        },
+        clear() {
+          out.innerHTML = '';
+          return null;
+        },
+      };
+
+      function run(line) {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        write(`${PROMPT} > ${trimmed}`, 'cmd');
+        history.push(trimmed);
+        histIndex = history.length;
+        const [name, ...args] = trimmed.split(/\s+/);
+        const fn = commands[name];
+        if (!fn) {
+          write(`${name}: command not found. Try "help".`, 'err');
+          return;
+        }
+        try {
+          const result = fn(args);
+          if (result) write(result);
+        } catch (err) {
+          write(String(err && err.message ? err.message : err), 'err');
+        }
+      }
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          run(input.value);
+          input.value = '';
+          e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+          if (histIndex > 0) {
+            histIndex -= 1;
+            input.value = history[histIndex] || '';
+          }
+          e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+          if (histIndex < history.length - 1) {
+            histIndex += 1;
+            input.value = history[histIndex] || '';
+          } else {
+            histIndex = history.length;
+            input.value = '';
+          }
+          e.preventDefault();
+        }
+      });
+
+      write('Nimbus OS terminal — type "help" for commands.', 'dim');
+      setTimeout(() => input.focus(), 60);
+    },
+  });
+
+};
+
+__defs['apps/clock.js'] = function (__exports, __req) {
+  // Clock — big clock plus a stopwatch. Opens from the taskbar tray.
+  const { defineApp } = __req('registry.js');
+
+  defineApp({
+    id: 'clock',
+    name: 'Clock',
+    icon: 'clock',
+    category: 'System',
+    builtin: true,
+    description: 'Clock, date and stopwatch',
+    width: 420,
+    height: 460,
+    minWidth: 320,
+    minHeight: 360,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="clockapp">
+          <div class="big" data-el="time">--:--:--</div>
+          <div class="bigdate" data-el="date"></div>
+          <div class="stopwatch">
+            <div class="lcd" data-el="watch">00:00.00</div>
+            <div class="row">
+              <button type="button" class="btn primary" data-act="toggle">Start</button>
+              <button type="button" class="btn" data-act="reset">Reset</button>
+            </div>
+          </div>
+        </div>`;
+
+      const timeEl = win.body.querySelector('[data-el="time"]');
+      const dateEl = win.body.querySelector('[data-el="date"]');
+      const watchEl = win.body.querySelector('[data-el="watch"]');
+      const toggle = win.body.querySelector('[data-act="toggle"]');
+
+      const clockTimer = setInterval(() => {
+        const now = new Date();
+        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      }, 1000);
+      timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      dateEl.textContent = new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+      let elapsed = 0;
+      let startedAt = null;
+      let watchTimer = null;
+
+      function format(ms) {
+        const total = Math.max(0, ms);
+        const minutes = Math.floor(total / 60000);
+        const seconds = Math.floor((total % 60000) / 1000);
+        const hundredths = Math.floor((total % 1000) / 10);
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
+      }
+
+      function paintWatch() {
+        const now = startedAt ? elapsed + (Date.now() - startedAt) : elapsed;
+        watchEl.textContent = format(now);
+      }
+
+      toggle.addEventListener('click', () => {
+        if (startedAt) {
+          elapsed += Date.now() - startedAt;
+          startedAt = null;
+          clearInterval(watchTimer);
+          watchTimer = null;
+          toggle.textContent = 'Start';
+        } else {
+          startedAt = Date.now();
+          watchTimer = setInterval(paintWatch, 30);
+          toggle.textContent = 'Stop';
+        }
+        paintWatch();
+      });
+
+      win.body.querySelector('[data-act="reset"]').addEventListener('click', () => {
+        elapsed = 0;
+        startedAt = null;
+        clearInterval(watchTimer);
+        watchTimer = null;
+        toggle.textContent = 'Start';
+        paintWatch();
+      });
+
+      win.onClose = () => {
+        clearInterval(clockTimer);
+        clearInterval(watchTimer);
+      };
+    },
+  });
+
+};
+
+__defs['apps/settings.js'] = function (__exports, __req) {
+  // Settings — appearance, desktop shortcuts and OS information.
+  const { defineApp, listApps } = __req('registry.js');
+  const { prefs, savePrefs, resetPrefs, isInstalled, toggleDesktopShortcut, onPrefsChange } = __req('state.js');
+
+  const ACCENTS = ['#0067c0', '#0f7b8a', '#7b3fbf', '#c2397a', '#2e7d32'];
+  const WALLS = ['bloom', 'sunset', 'ocean', 'graphite'];
+
+  defineApp({
+    id: 'settings',
+    name: 'Settings',
+    icon: 'settings',
+    category: 'System',
+    builtin: true,
+    description: 'Personalise appearance and manage apps',
+    width: 820,
+    height: 560,
+    minWidth: 560,
+    minHeight: 340,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="settings">
+          <div class="settings-nav">
+            <button type="button" data-tab="appearance" class="on">Appearance</button>
+            <button type="button" data-tab="desktop">Desktop</button>
+            <button type="button" data-tab="about">About</button>
+          </div>
+          <div class="settings-panel"></div>
+        </div>`;
+
+      const panel = win.body.querySelector('.settings-panel');
+      const nav = win.body.querySelector('.settings-nav');
+      let tab = 'appearance';
+
+      function panelAppearance() {
+        const appCount = listApps().filter(isInstalled).length;
+        panel.innerHTML = `
+          <h2>Appearance</h2>
+          <p class="sub">${appCount} apps available on this desktop.</p>
+          <div class="set-group">
+            <div class="set-row">
+              <div class="label">Theme<small>Windows 11 style light or dark surfaces</small></div>
+              <div class="row">
+                <button type="button" class="btn" data-theme="light">Light</button>
+                <button type="button" class="btn" data-theme="dark">Dark</button>
+              </div>
+            </div>
+            <div class="set-row">
+              <div class="label">Accent colour</div>
+              <div class="swatches"></div>
+            </div>
+          </div>
+          <div class="set-group">
+            <div class="set-row" style="display:block">
+              <div class="label" style="margin-bottom:10px">Wallpaper</div>
+              <div class="walls"></div>
+            </div>
+          </div>`;
+
+        panel.querySelectorAll('[data-theme]').forEach((btn) => {
+          btn.addEventListener('click', () => savePrefs({ theme: btn.dataset.theme }));
+        });
+
+        const swatches = panel.querySelector('.swatches');
+        ACCENTS.forEach((color) => {
+          const sw = document.createElement('button');
+          sw.type = 'button';
+          sw.className = `swatch${prefs.accent === color ? ' on' : ''}`;
+          sw.style.background = color;
+          sw.title = color;
+          sw.setAttribute('aria-label', `Accent ${color}`);
+          sw.addEventListener('click', () => savePrefs({ accent: color }));
+          swatches.appendChild(sw);
+        });
+
+        const walls = panel.querySelector('.walls');
+        WALLS.forEach((name) => {
+          const opt = document.createElement('button');
+          opt.type = 'button';
+          opt.className = `wall-opt${prefs.wall === name ? ' on' : ''}`;
+          opt.dataset.wall = name;
+          opt.title = name;
+          opt.setAttribute('aria-label', `Wallpaper ${name}`);
+          opt.addEventListener('click', () => savePrefs({ wall: name }));
+          walls.appendChild(opt);
+        });
+      }
+
+      function panelDesktop() {
+        const apps = listApps().filter(isInstalled).sort((a, b) => a.name.localeCompare(b.name));
+        panel.innerHTML = `
+          <h2>Desktop</h2>
+          <p class="sub">Choose which apps get a shortcut on the desktop.</p>
+          <div class="set-group" data-rows></div>`;
+        const rows = panel.querySelector('[data-rows]');
+        apps.forEach((app) => {
+          const row = document.createElement('label');
+          row.className = 'set-row';
+          row.style.cursor = 'pointer';
+          row.innerHTML = `
+            <div class="label"></div>
+            <input type="checkbox" style="accent-color: var(--accent); width:16px; height:16px">`;
+          row.querySelector('.label').textContent = app.name;
+          const box = row.querySelector('input');
+          box.checked = prefs.desktop.includes(app.id);
+          box.addEventListener('change', () => toggleDesktopShortcut(app.id));
+          rows.appendChild(row);
+        });
+      }
+
+      function panelAbout() {
+        panel.innerHTML = `
+          <h2>About</h2>
+          <p class="sub">A Windows 11–inspired desktop that runs entirely in your browser.</p>
+          <div class="set-group">
+            <div class="set-row"><div class="label">Nimbus OS<small>Version 1.0.0</small></div></div>
+            <div class="set-row"><div class="label">Apps registered<small>${listApps().length} in this build</small></div></div>
+            <div class="set-row"><div class="label">Storage<small>localStorage — settings and notes stay on this device</small></div></div>
+            <div class="set-row"><div class="label">Hosting<small>Static files — deployable to GitHub Pages</small></div></div>
+          </div>
+          <div class="set-group">
+            <div class="set-row">
+              <div class="label">Reset settings<small>Restores theme, wallpaper and installed apps</small></div>
+              <button type="button" class="btn" data-reset>Reset</button>
+            </div>
+          </div>`;
+        const reset = panel.querySelector('[data-reset]');
+        reset.addEventListener('click', () => {
+          reset.textContent = 'Reset';
+          reset.disabled = true;
+          resetPrefs();
+          setTimeout(() => {
+            reset.disabled = false;
+          }, 300);
+        });
+      }
+
+      function draw() {
+        if (tab === 'appearance') panelAppearance();
+        else if (tab === 'desktop') panelDesktop();
+        else panelAbout();
+      }
+
+      nav.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-tab]');
+        if (!btn) return;
+        tab = btn.dataset.tab;
+        nav.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b === btn));
+        panel.scrollTop = 0;
+        draw();
+      });
+
+      draw();
+      win.onClose = onPrefsChange(() => {
+        if (tab === 'appearance' || tab === 'desktop') draw();
+      });
+    },
+  });
+
+};
+
+__defs['store.js'] = function (__exports, __req) {
+  // Store app: browses every non-builtin registered app and installs/uninstalls it.
+  const { defineApp, listApps, getApp } = __req('registry.js');
+  const { iconSVG } = __req('icons.js');
+  const { isInstalled, installApp, uninstallApp, onPrefsChange } = __req('state.js');
+  const { openApp } = __req('wm.js');
+
+  defineApp({
+    id: 'store',
+    name: 'App Store',
+    icon: 'store',
+    category: 'System',
+    builtin: true,
+    description: 'Install new apps and run updates',
+    width: 880,
+    height: 600,
+    minWidth: 520,
+    minHeight: 360,
+    launch(win) {
+      render(win);
+      const off = onPrefsChange(() => render(win));
+      win.onClose = off;
+    },
+  });
+
+  function catalog() {
+    return listApps()
+      .filter((app) => !app.builtin)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function render(win) {
+    const apps = catalog();
+    const installedCount = apps.filter((a) => isInstalled(a)).length;
+    const featured = apps.find((a) => a.id === 'paint') || apps[0];
+
+    win.body.innerHTML = `
+      <div class="store">
+        <div class="store-top">
+          <h2>App Store</h2>
+          <input class="store-search" type="search" placeholder="Search apps" aria-label="Search the store">
+        </div>
+        <div class="store-scroll">
+          <div class="store-hero">
+            <h3>${featured ? escapeHTML(featured.name) : 'Everything you need'}</h3>
+            <p>${featured ? escapeHTML(featured.description) : 'Apps install straight into your Start menu and run locally in the browser.'}</p>
+            <button class="btn" data-hero="${featured ? featured.id : ''}">
+              ${featured && isInstalled(featured) ? 'Open' : 'Get'}
+            </button>
+          </div>
+          <div class="store-section-head">
+            <h4>Apps for you</h4>
+            <span>${installedCount} of ${apps.length} installed</span>
+          </div>
+          <div class="store-grid"></div>
+        </div>
+      </div>`;
+
+    const grid = win.body.querySelector('.store-grid');
+    apps.forEach((app) => {
+      const installed = isInstalled(app);
+      const card = document.createElement('div');
+      card.className = 'store-card';
+      card.innerHTML = `
+        ${iconSVG(app.icon)}
+        <div class="meta">
+          <strong></strong>
+          <p></p>
+          <div class="tag"></div>
+          <div class="actions" style="margin-top:8px;display:flex;gap:6px"></div>
+        </div>`;
+      card.querySelector('strong').textContent = app.name;
+      card.querySelector('p').textContent = app.description;
+      card.querySelector('.tag').textContent = `${app.category} · ${app.size || 'small'} · ${installed ? 'Installed' : 'Free'}`;
+
+      const actions = card.querySelector('.actions');
+      const main = document.createElement('button');
+      main.type = 'button';
+      main.className = installed ? 'btn' : 'btn primary';
+      main.textContent = installed ? 'Open' : 'Get';
+      main.addEventListener('click', () => {
+        if (isInstalled(app)) {
+          openApp(app.id);
+          return;
+        }
+        main.disabled = true;
+        main.textContent = 'Installing…';
+        setTimeout(() => installApp(app.id), 700);
+      });
+      actions.appendChild(main);
+
+      if (installed && !app.builtin) {
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'btn ghost';
+        rm.textContent = 'Uninstall';
+        rm.addEventListener('click', () => uninstallApp(app.id));
+        actions.appendChild(rm);
+      }
+      grid.appendChild(card);
+    });
+
+    const heroBtn = win.body.querySelector('[data-hero]');
+    heroBtn.addEventListener('click', () => {
+      const id = heroBtn.dataset.hero;
+      if (!id) return;
+      if (isInstalled(getApp(id))) openApp(id);
+      else {
+        heroBtn.disabled = true;
+        heroBtn.textContent = 'Installing…';
+        setTimeout(() => installApp(id), 700);
+      }
+    });
+
+    const search = win.body.querySelector('.store-search');
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      grid.querySelectorAll('.store-card').forEach((card) => {
+        card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
+  }
+
+  function escapeHTML(text) {
+    return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+};
+
+__defs['apps/paint.js'] = function (__exports, __req) {
+  // Paint — canvas sketching with PNG export.
+  const { defineApp } = __req('registry.js');
+
+  defineApp({
+    id: 'paint',
+    name: 'Paint',
+    icon: 'paint',
+    category: 'Creativity',
+    size: '0.9 MB',
+    description: 'Sketch, doodle and export your drawing as a PNG.',
+    width: 860,
+    height: 640,
+    minWidth: 480,
+    minHeight: 360,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="paint">
+          <div class="paint-bar">
+            <button type="button" class="btn ghost" data-tool="brush">Brush</button>
+            <button type="button" class="btn ghost" data-tool="eraser">Eraser</button>
+            <input type="color" value="#0067c0" aria-label="Brush colour">
+            <label style="display:flex;align-items:center;gap:6px">Size
+              <input type="range" min="1" max="60" value="8" aria-label="Brush size">
+            </label>
+            <span class="spacer"></span>
+            <button type="button" class="btn" data-act="clear">Clear</button>
+            <button type="button" class="btn primary" data-act="save">Save PNG</button>
+          </div>
+          <div class="paint-canvas-wrap"><canvas width="900" height="520"></canvas></div>
+        </div>`;
+
+      const canvas = win.body.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      const color = win.body.querySelector('input[type="color"]');
+      const size = win.body.querySelector('input[type="range"]');
+      const tools = win.body.querySelectorAll('[data-tool]');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let tool = 'brush';
+      let drawing = false;
+      let last = null;
+
+      tools.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tool = btn.dataset.tool;
+          tools.forEach((b) => b.classList.toggle('primary', b === btn));
+        });
+      });
+
+      function point(e) {
+        const r = canvas.getBoundingClientRect();
+        return {
+          x: ((e.clientX - r.left) / r.width) * canvas.width,
+          y: ((e.clientY - r.top) / r.height) * canvas.height,
+        };
+      }
+
+      function stroke(from, to) {
+        ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color.value;
+        ctx.lineWidth = tool === 'eraser' ? Number(size.value) * 2 : Number(size.value);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.stroke();
+      }
+
+      canvas.addEventListener('pointerdown', (e) => {
+        drawing = true;
+        last = point(e);
+        canvas.setPointerCapture(e.pointerId);
+        stroke(last, { x: last.x + 0.01, y: last.y });
+        e.preventDefault();
+      });
+      canvas.addEventListener('pointermove', (e) => {
+        if (!drawing) return;
+        const p = point(e);
+        stroke(last, p);
+        last = p;
+      });
+      const stop = () => {
+        drawing = false;
+        last = null;
+      };
+      canvas.addEventListener('pointerup', stop);
+      canvas.addEventListener('pointercancel', stop);
+      canvas.addEventListener('pointerleave', stop);
+
+      win.body.querySelector('[data-act="clear"]').addEventListener('click', () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      });
+
+      win.body.querySelector('[data-act="save"]').addEventListener('click', () => {
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'nimbus-paint.png';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/png');
+      });
+    },
+  });
+
+};
+
+__defs['apps/snake.js'] = function (__exports, __req) {
+  // Snake — a complete little game on canvas, keyboard controlled.
+  const { defineApp } = __req('registry.js');
+
+  const CELL = 20;
+  const COLS = 21;
+  const ROWS = 21;
+  const TICK = 115;
+
+  defineApp({
+    id: 'snake',
+    name: 'Snake',
+    icon: 'snake',
+    category: 'Games',
+    size: '0.3 MB',
+    description: 'Grow the snake, dodge the walls, do not eat yourself.',
+    width: 520,
+    height: 580,
+    minWidth: 400,
+    minHeight: 460,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="game">
+          <div class="game-hud">
+            <span>Score <strong data-el="score">0</strong></span>
+            <span>Best <strong data-el="best">0</strong></span>
+            <span class="spacer"></span>
+            <span style="color:var(--text-2)">Arrows / WASD</span>
+          </div>
+          <div class="game-stage">
+            <canvas width="${COLS * CELL}" height="${ROWS * CELL}" tabindex="0" aria-label="Snake board"></canvas>
+            <div class="game-overlay">
+              <div>
+                <strong data-el="title">Snake</strong>
+                <span data-el="hint">Click the board, then press an arrow key to start.</span>
+                <div><button type="button" class="btn" data-act="start">Play</button></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      const canvas = win.body.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      const overlay = win.body.querySelector('.game-overlay');
+      const titleEl = win.body.querySelector('[data-el="title"]');
+      const hintEl = win.body.querySelector('[data-el="hint"]');
+      const scoreEl = win.body.querySelector('[data-el="score"]');
+      const bestEl = win.body.querySelector('[data-el="best"]');
+
+      const BEST_KEY = 'nimbus.snake.best';
+      let best = Number(localStorage.getItem(BEST_KEY) || 0);
+      bestEl.textContent = String(best);
+
+      let snake = [];
+      let dir = { x: 1, y: 0 };
+      let queued = [];
+      let food = { x: 15, y: 10 };
+      let score = 0;
+      let timer = null;
+      let state = 'idle';
+
+      function placeFood() {
+        do {
+          food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+        } while (snake.some((s) => s.x === food.x && s.y === food.y));
+      }
+
+      function reset() {
+        snake = [
+          { x: 8, y: 10 },
+          { x: 7, y: 10 },
+          { x: 6, y: 10 },
+        ];
+        dir = { x: 1, y: 0 };
+        queued = [];
+        score = 0;
+        scoreEl.textContent = '0';
+        placeFood();
+        draw();
+      }
+
+      function draw() {
+        ctx.fillStyle = '#0f1720';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(255,255,255,.05)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < COLS; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * CELL, 0);
+          ctx.lineTo(i * CELL, canvas.height);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, i * CELL);
+          ctx.lineTo(canvas.width, i * CELL);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        snake.forEach((seg, i) => {
+          ctx.fillStyle = i === 0 ? '#8ef0b0' : '#4fbf78';
+          const pad = i === 0 ? 1.5 : 2.5;
+          ctx.beginPath();
+          ctx.roundRect(seg.x * CELL + pad, seg.y * CELL + pad, CELL - pad * 2, CELL - pad * 2, 5);
+          ctx.fill();
+        });
+      }
+
+      function tick() {
+        if (queued.length) dir = queued.shift();
+        const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+        if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS || snake.some((s) => s.x === head.x && s.y === head.y)) {
+          end();
+          return;
+        }
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+          score += 1;
+          scoreEl.textContent = String(score);
+          placeFood();
+        } else {
+          snake.pop();
+        }
+        draw();
+      }
+
+      function start() {
+        reset();
+        state = 'running';
+        overlay.hidden = true;
+        clearInterval(timer);
+        timer = setInterval(tick, TICK);
+        canvas.focus();
+      }
+
+      function end() {
+        clearInterval(timer);
+        timer = null;
+        state = 'over';
+        if (score > best) {
+          best = score;
+          bestEl.textContent = String(best);
+          try {
+            localStorage.setItem(BEST_KEY, String(best));
+          } catch {
+            /* ignore */
+          }
+        }
+        titleEl.textContent = 'Game over';
+        hintEl.textContent = `You scored ${score}.`;
+        overlay.querySelector('[data-act="start"]').textContent = 'Play again';
+        overlay.hidden = false;
+      }
+
+      function turn(x, y) {
+        if (state !== 'running') return;
+        const last = queued.length ? queued[queued.length - 1] : dir;
+        if (last.x === -x && last.y === -y) return;
+        if (last.x === x && last.y === y) return;
+        if (queued.length < 3) queued.push({ x, y });
+      }
+
+      canvas.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') turn(0, -1);
+        else if (k === 'arrowdown' || k === 's') turn(0, 1);
+        else if (k === 'arrowleft' || k === 'a') turn(-1, 0);
+        else if (k === 'arrowright' || k === 'd') turn(1, 0);
+        else return;
+        e.preventDefault();
+      });
+
+      overlay.querySelector('[data-act="start"]').addEventListener('click', start);
+      win.onClose = () => clearInterval(timer);
+
+      reset();
+      state = 'idle';
+    },
+  });
+
+};
+
+__defs['apps/weather.js'] = function (__exports, __req) {
+  // Weather — live conditions from Open-Meteo (no API key, CORS enabled).
+  const { defineApp } = __req('registry.js');
+
+  const CODES = {
+    0: ['Clear sky', '☀️'],
+    1: ['Mainly clear', '🌤️'],
+    2: ['Partly cloudy', '⛅'],
+    3: ['Overcast', '☁️'],
+    45: ['Fog', '🌫️'],
+    48: ['Depositing rime fog', '🌫️'],
+    51: ['Light drizzle', '🌦️'],
+    53: ['Drizzle', '🌦️'],
+    55: ['Dense drizzle', '🌧️'],
+    61: ['Light rain', '🌦️'],
+    63: ['Rain', '🌧️'],
+    65: ['Heavy rain', '🌧️'],
+    66: ['Freezing rain', '🌧️'],
+    67: ['Heavy freezing rain', '🌧️'],
+    71: ['Light snow', '🌨️'],
+    73: ['Snow', '🌨️'],
+    75: ['Heavy snow', '❄️'],
+    77: ['Snow grains', '🌨️'],
+    80: ['Light showers', '🌦️'],
+    81: ['Showers', '🌧️'],
+    82: ['Violent showers', '⛈️'],
+    85: ['Snow showers', '🌨️'],
+    86: ['Heavy snow showers', '❄️'],
+    95: ['Thunderstorm', '⛈️'],
+    96: ['Thunderstorm with hail', '⛈️'],
+    99: ['Thunderstorm with heavy hail', '⛈️'],
+  };
+
+  defineApp({
+    id: 'weather',
+    name: 'Weather',
+    icon: 'weather',
+    category: 'Utilities',
+    size: '0.2 MB',
+    description: 'Live conditions and today’s range for any city.',
+    width: 520,
+    height: 480,
+    minWidth: 380,
+    minHeight: 320,
+    launch(win) {
+      win.body.innerHTML = `
+        <div class="weather">
+          <div class="row" style="margin-bottom:18px">
+            <input data-city type="search" value="London" aria-label="City"
+              style="flex:1;height:32px;border-radius:16px;border:1px solid var(--stroke-strong);background:var(--surface-solid);padding:0 14px;outline:none">
+            <button type="button" class="btn primary" data-go>Search</button>
+          </div>
+          <div data-body>
+            <div style="color:var(--text-2);font-size:12.5px">Loading weather…</div>
+          </div>
+        </div>`;
+
+      const cityInput = win.body.querySelector('[data-city]');
+      const body = win.body.querySelector('[data-body]');
+      const go = win.body.querySelector('[data-go]');
+      let request = 0;
+
+      async function lookup(city) {
+        const id = ++request;
+        body.innerHTML = '<div style="color:var(--text-2);font-size:12.5px">Loading weather…</div>';
+        try {
+          const geoRes = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
+          );
+          const geo = await geoRes.json();
+          if (!geo.results || !geo.results.length) throw new Error(`No place found for “${city}”.`);
+          const place = geo.results[0];
+
+          const wxRes = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}` +
+              '&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code' +
+              '&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1'
+          );
+          const wx = await wxRes.json();
+          if (id !== request) return;
+
+          const current = wx.current || {};
+          const daily = wx.daily || {};
+          const [label, emoji] = CODES[current.weather_code] || ['Unknown', '🌡️'];
+          const placeName = [place.name, place.country].filter(Boolean).join(', ');
+
+          body.innerHTML = `
+            <div class="weather-hero">
+              <div style="font-size:54px;line-height:1">${emoji}</div>
+              <div>
+                <div class="temp">${Math.round(current.temperature_2m)}°C</div>
+                <div class="where">${escapeHTML(placeName)}</div>
+                <div class="cond">${label}</div>
+              </div>
+            </div>
+            <div class="weather-stats">
+              <div class="stat"><span>Feels like</span><strong>${Math.round(current.apparent_temperature)}°C</strong></div>
+              <div class="stat"><span>Humidity</span><strong>${Math.round(current.relative_humidity_2m)}%</strong></div>
+              <div class="stat"><span>Wind</span><strong>${Math.round(current.wind_speed_10m)} km/h</strong></div>
+              <div class="stat"><span>Today</span><strong>${Math.round(daily.temperature_2m_min?.[0])}° / ${Math.round(
+            daily.temperature_2m_max?.[0]
+          )}°</strong></div>
+            </div>
+            <div class="weather-note">Live data from Open-Meteo. This app needs a network connection; everything else on the desktop works offline.</div>`;
+          win.setTitle(`Weather — ${placeName}`);
+        } catch (err) {
+          if (id !== request) return;
+          body.innerHTML = `<div style="color:var(--text-2);font-size:12.5px;line-height:1.6">
+            Could not load weather.<br>${escapeHTML(String(err.message || err))}
+          </div>`;
+        }
+      }
+
+      function escapeHTML(text) {
+        return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      go.addEventListener('click', () => lookup(cityInput.value.trim() || 'London'));
+      cityInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') lookup(cityInput.value.trim() || 'London');
+      });
+
+      lookup('London');
+    },
+  });
+
+};
+
+__defs['apps/taskmanager.js'] = function (__exports, __req) {
+  // Task Manager — shows open windows and lets you end them, like the real thing.
+  const { defineApp, getApp, listApps } = __req('registry.js');
+  const { getWindows, onWindowsChange } = __req('wm.js');
+  const { prefs } = __req('state.js');
+
+  defineApp({
+    id: 'taskmanager',
+    name: 'Task Manager',
+    icon: 'tasks',
+    category: 'System',
+    size: '0.4 MB',
+    description: 'See every open window and end the ones you no longer need.',
+    width: 620,
+    height: 460,
+    minWidth: 420,
+    minHeight: 300,
+    launch(win) {
+      win.body.innerHTML = `
+        <div style="display:flex;flex-direction:column;height:100%">
+          <div class="store-top">
+            <h2>Processes</h2>
+            <span class="spacer" style="flex:1"></span>
+            <span style="font-size:11.5px;color:var(--text-2)" data-el="count"></span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:10px 14px" data-el="list"></div>
+          <div class="statusbar">
+            <span>Nimbus OS 1.0.0</span>
+            <span data-el="apps"></span>
+          </div>
+        </div>`;
+
+      const list = win.body.querySelector('[data-el="list"]');
+      const count = win.body.querySelector('[data-el="count"]');
+      const appsLabel = win.body.querySelector('[data-el="apps"]');
+
+      function draw() {
+        const windows = getWindows();
+        count.textContent = `${windows.length} window${windows.length === 1 ? '' : 's'}`;
+        appsLabel.textContent = `${listApps().length} apps registered · ${prefs.installed.length} installed from the store`;
+        list.innerHTML = '';
+        if (!windows.length) {
+          list.innerHTML = '<div style="color:var(--text-2);font-size:12.5px;padding:16px 4px">No windows are open.</div>';
+          return;
+        }
+        windows.forEach((w) => {
+          const app = getApp(w.appId);
+          const row = document.createElement('div');
+          row.className = 'set-row';
+          row.style.borderRadius = '6px';
+          row.innerHTML = '<div class="label"></div><button type="button" class="btn ghost">End task</button>';
+          const label = row.querySelector('.label');
+          label.textContent = app ? app.name : w.appId;
+          const small = document.createElement('small');
+          small.textContent = w.title;
+          label.appendChild(small);
+          row.querySelector('button').addEventListener('click', () => w.close());
+          list.appendChild(row);
+        });
+      }
+
+      draw();
+      win.onClose = onWindowsChange(draw);
+    },
+  });
+
+};
+
+__defs['shell.js'] = function (__exports, __req) {
+  // Shell glue: desktop shortcuts, taskbar, Start menu, tray clock, theme toggle.
+  const { iconSVG } = __req('icons.js');
+  const { getApp, listApps } = __req('registry.js');
+  const { prefs, savePrefs, isInstalled, onPrefsChange, applyAppearance } = __req('state.js');
+  const { openApp, onWindowsChange, getWindows, getActiveId, findWindow } = __req('wm.js');
+
+  const PINNED_TASKBAR = ['brave', 'store', 'notepad', 'settings'];
+
+  const els = {};
+  let startOpen = false;
+  let allMode = false;
+
+  function initShell() {
+    els.screen = document.getElementById('screen');
+    els.startButton = document.getElementById('start-button');
+    els.menu = document.getElementById('startmenu');
+    els.search = document.getElementById('start-search-input');
+    els.pinned = document.getElementById('start-pinned');
+    els.all = document.getElementById('start-all');
+    els.pinnedHead = document.getElementById('start-pinned-head');
+    els.allHead = document.getElementById('start-all-head');
+    els.empty = document.getElementById('start-empty');
+    els.desktop = document.getElementById('desktop-icons');
+    els.taskbarApps = document.getElementById('taskbar-apps');
+    els.recent = document.getElementById('start-recent');
+    els.recentHead = document.getElementById('start-recent-head');
+
+    applyAppearance();
+    renderDesktop();
+    renderStart();
+    renderTaskbar(getWindows(), getActiveId());
+
+    els.startButton.addEventListener('click', () => (startOpen ? closeStart() : openStart()));
+    document.getElementById('tb-search').addEventListener('click', () => openStart());
+    document.getElementById('start-recent-more').addEventListener('click', () => {
+      allMode = true;
+      renderStart();
+    });
+    document.getElementById('widgets').addEventListener('click', () => openApp('weather'));
+    document.getElementById('show-desktop').addEventListener('click', () => {
+      getWindows().forEach((win) => {
+        if (!win.minimized) win.minimize();
+      });
+    });
+    document.getElementById('start-all-toggle').addEventListener('click', () => {
+      allMode = true;
+      renderStart();
+    });
+    document.getElementById('start-all-back').addEventListener('click', () => {
+      allMode = false;
+      renderStart();
+    });
+    document.getElementById('start-all-toggle').addEventListener('dblclick', (e) => e.preventDefault());
+    els.search.addEventListener('input', () => renderStart());
+
+    document.getElementById('start-power').addEventListener('click', () => {
+      closeStart();
+      window.location.reload();
+    });
+
+    document.getElementById('tray-theme').addEventListener('click', () => {
+      savePrefs({ theme: prefs.theme === 'dark' ? 'light' : 'dark' });
+      applyAppearance();
+    });
+    document.getElementById('tray-clock').addEventListener('click', () => openApp('clock'));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && startOpen) {
+        closeStart();
+        els.startButton.focus();
+      }
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!startOpen) return;
+      if (e.target.closest('#startmenu') || e.target.closest('#start-button')) return;
+      closeStart();
+    });
+
+    onWindowsChange((wins, activeId) => renderTaskbar(wins, activeId));
+    onPrefsChange(() => {
+      applyAppearance();
+      renderDesktop();
+      renderStart();
+      renderTaskbar(getWindows(), getActiveId());
+    });
+
+    tickClock();
+    setInterval(tickClock, 1000);
+  }
+
+  function renderDesktop() {
+    els.desktop.innerHTML = '';
+    prefs.desktop.forEach((id) => {
+      const app = getApp(id);
+      if (!app || !isInstalled(app)) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dicon';
+      btn.title = app.description || app.name;
+      btn.innerHTML = `${iconSVG(app.icon)}<span></span>`;
+      btn.querySelector('span').textContent = app.name;
+      btn.addEventListener('click', () => openApp(id));
+      els.desktop.appendChild(btn);
+    });
+  }
+
+  function renderTaskbar(windows = getWindows(), activeId = getActiveId()) {
+    els.taskbarApps.innerHTML = '';
+    const handled = new Set();
+    PINNED_TASKBAR.forEach((id) => {
+      const app = getApp(id);
+      if (!app) return;
+      handled.add(id);
+      els.taskbarApps.appendChild(taskbarButton(app, windows.find((w) => w.appId === id), activeId));
+    });
+    windows.forEach((win) => {
+      if (handled.has(win.appId)) return;
+      const app = getApp(win.appId);
+      if (!app) return;
+      handled.add(win.appId);
+      els.taskbarApps.appendChild(taskbarButton(app, win, activeId));
+    });
+  }
+
+  function taskbarButton(app, win, activeId) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    const active = Boolean(win && win.id === activeId && !win.minimized);
+    btn.className = `tb-btn${win ? ' running' : ''}${active ? ' active' : ''}`;
+    btn.title = win ? win.title : app.name;
+    btn.setAttribute('aria-label', app.name);
+    btn.innerHTML = iconSVG(app.icon);
+    btn.addEventListener('click', () => {
+      const existing = findWindow(app.id);
+      if (!existing) {
+        openApp(app.id);
+        return;
+      }
+      if (existing.minimized) existing.restore();
+      else if (existing.id === activeId) existing.minimize();
+      else existing.focus();
+    });
+    return btn;
+  }
+
+  function renderStart() {
+    const q = els.search.value.trim().toLowerCase();
+    let apps = listApps().filter(isInstalled).sort((a, b) => a.name.localeCompare(b.name));
+    if (q) {
+      apps = apps.filter((a) => `${a.name} ${a.description} ${a.category}`.toLowerCase().includes(q));
+    }
+    const showList = allMode || q.length > 0;
+
+    els.pinned.hidden = showList;
+    els.pinnedHead.hidden = showList;
+    els.recent.hidden = showList;
+    els.recentHead.hidden = showList;
+    els.all.hidden = !showList;
+    els.allHead.hidden = !showList;
+    els.empty.hidden = apps.length > 0;
+    els.pinned.innerHTML = '';
+    els.all.innerHTML = '';
+    els.recent.innerHTML = '';
+
+    apps.forEach((app) => {
+      els[showList ? 'all' : 'pinned'].appendChild(showList ? startRow(app) : startTile(app));
+    });
+
+    if (!showList) {
+      ['notepad', 'calculator', 'settings', 'store']
+        .map(getApp)
+        .filter((app) => app && isInstalled(app))
+        .slice(0, 4)
+        .forEach((app) => els.recent.appendChild(recommendedRow(app)));
+    }
+  }
+
+  function startTile(app) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'start-app';
+    btn.title = app.description || app.name;
+    btn.innerHTML = `${iconSVG(app.icon)}<span></span>`;
+    btn.querySelector('span').textContent = app.name;
+    btn.addEventListener('click', () => {
+      closeStart();
+      openApp(app.id);
+    });
+    return btn;
+  }
+
+  function startRow(app) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'start-row';
+    btn.innerHTML = `${iconSVG(app.icon)}<span class="name"></span><small></small>`;
+    btn.querySelector('.name').textContent = app.name;
+    btn.querySelector('small').textContent = app.builtin ? 'Built in' : app.category;
+    btn.addEventListener('click', () => {
+      closeStart();
+      openApp(app.id);
+    });
+    return btn;
+  }
+
+  function recommendedRow(app) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rec-item';
+    btn.title = app.description || app.name;
+    btn.innerHTML = `${iconSVG(app.icon)}<span class="rec-text"><strong></strong><small></small></span>`;
+    btn.querySelector('strong').textContent = app.name;
+    btn.querySelector('small').textContent = app.category;
+    btn.addEventListener('click', () => {
+      closeStart();
+      openApp(app.id);
+    });
+    return btn;
+  }
+
+  function openStart() {
+    startOpen = true;
+    allMode = false;
+    els.search.value = '';
+    renderStart();
+    els.menu.hidden = false;
+    els.startButton.classList.add('open');
+    requestAnimationFrame(() => els.search.focus());
+  }
+
+  function closeStart() {
+    startOpen = false;
+    els.menu.hidden = true;
+    els.startButton.classList.remove('open');
+  }
+
+  function tickClock() {
+    const now = new Date();
+    const time = document.getElementById('clock-time');
+    const date = document.getElementById('clock-date');
+    if (!time || !date) return;
+    time.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    date.textContent = now.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  __exports.initShell = initShell;
+};
+
+__defs['tray.js'] = function (__exports, __req) {
+  // Tray + Quick settings.
+  //
+  // Everything shown here comes from real browser APIs: navigator.onLine, the
+  // Network Information API, Web Bluetooth, and the Battery Status API. A web
+  // page cannot list or join Wi-Fi networks — that is the operating system's job —
+  // so the network tile reports the true connection state and says plainly what it
+  // cannot do, rather than drawing fake networks.
+  const { prefs, savePrefs, applyAppearance, onPrefsChange } = __req('state.js');
+
+  const conn =
+    navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+
+  const state = {
+    open: false,
+    tab: 'network',
+    bluetooth: 'checking', // checking | available | unavailable | blocked
+    device: null,
+    connected: false,
+    note: '',
+    battery: null,
+  };
+
+  const ICON = {
+    wifi: '<svg viewBox="0 0 24 24" class="icon"><path d="M2.5 8.8a14 14 0 0 1 19 0M5.6 12.3a9.4 9.4 0 0 1 12.8 0M8.8 15.8a4.8 4.8 0 0 1 6.4 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="19.2" r="1.5" fill="currentColor"/></svg>',
+    wifiOff: '<svg viewBox="0 0 24 24" class="icon"><path d="M2.5 8.8a14 14 0 0 1 8-3.7M13.6 5.1a14 14 0 0 1 7.9 3.7M5.6 12.3a9.4 9.4 0 0 1 4.3-2.2M14.2 10.2a9.4 9.4 0 0 1 4.2 2.1M8.8 15.8a4.8 4.8 0 0 1 6.4 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="19.2" r="1.5" fill="currentColor"/></svg>',
+    bluetooth: '<svg viewBox="0 0 24 24" class="icon"><path d="M8 7.5 16 16.5 12 20V4l4 3.5L8 16.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    theme: '<svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="4.6" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></g></svg>',
+    battery: '<svg viewBox="0 0 24 24" class="icon"><rect x="2.5" y="7.5" width="16" height="9" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="20" y="10.2" width="2" height="3.6" rx="1" fill="currentColor"/><rect class="level" x="4.4" y="9.4" width="10" height="5.2" rx="1.1" fill="currentColor"/></svg>',
+  };
+
+  let root;
+  let networkBtn;
+  let bluetoothBtn;
+
+  function initTray() {
+    root = document.getElementById('quicksettings');
+    networkBtn = document.getElementById('tray-network');
+    bluetoothBtn = document.getElementById('tray-bluetooth');
+    if (!root) return;
+
+    networkBtn.addEventListener('click', () => toggle('network'));
+    bluetoothBtn.addEventListener('click', () => toggle('bluetooth'));
+    // The theme tray button is owned by shell.js; this only keeps the flyout's
+    // labels in step with the change it makes.
+    onPrefsChange(() => render());
+
+    document.addEventListener('pointerdown', (e) => {
+      if (!state.open) return;
+      if (e.target.closest('#quicksettings') || e.target.closest('.tray')) return;
+      close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && state.open) close();
+    });
+
+    window.addEventListener('online', () => onNetworkChange('Network restored'));
+    window.addEventListener('offline', () => onNetworkChange('Network lost'));
+    if (conn) conn.addEventListener('change', () => onNetworkChange(''));
+
+    detectBluetooth();
+    detectBattery();
+    render();
+  }
+
+  function onNetworkChange(note) {
+    state.note = note;
+    render();
+  }
+
+  function toggle(tab) {
+    if (state.open && state.tab === tab) return close();
+    state.tab = tab;
+    state.open = true;
+    root.hidden = false;
+    render();
+  }
+
+  function close() {
+    state.open = false;
+    root.hidden = true;
+    networkBtn.classList.remove('open');
+    bluetoothBtn.classList.remove('open');
+  }
+
+  async function detectBluetooth() {
+    if (!navigator.bluetooth) {
+      state.bluetooth = 'unavailable';
+      render();
+      return;
+    }
+    try {
+      // Only Chrome-family browsers expose this, and only in a secure context.
+      const available = navigator.bluetooth.getAvailability
+        ? await navigator.bluetooth.getAvailability()
+        : true;
+      state.bluetooth = available ? 'available' : 'blocked';
+    } catch {
+      state.bluetooth = 'available';
+    }
+    render();
+  }
+
+  async function detectBattery() {
+    if (!navigator.getBattery) return;
+    try {
+      const battery = await navigator.getBattery();
+      state.battery = battery;
+      const update = () => render();
+      battery.addEventListener('levelchange', update);
+      battery.addEventListener('chargingchange', update);
+      render();
+    } catch {
+      /* not supported */
+    }
+  }
+
+  function networkFacts() {
+    const online = navigator.onLine;
+    const facts = [{ k: 'Status', v: online ? 'Connected' : 'Offline' }];
+    if (conn) {
+      if (conn.effectiveType) facts.push({ k: 'Connection type', v: labelForType(conn.effectiveType) });
+      if (typeof conn.downlink === 'number') facts.push({ k: 'Downlink', v: `${conn.downlink} Mb/s (estimate)` });
+      if (typeof conn.rtt === 'number') facts.push({ k: 'Round trip', v: `${conn.rtt} ms (estimate)` });
+      if (typeof conn.saveData === 'boolean') facts.push({ k: 'Data saver', v: conn.saveData ? 'On' : 'Off' });
+    }
+    return { online, facts };
+  }
+
+  function labelForType(type) {
+    return (
+      { 'slow-2g': 'Very slow', '2g': 'Slow', '3g': 'Moderate', '4g': 'Fast' }[type] || type
+    );
+  }
+
+  async function pickBluetoothDevice() {
+    state.note = '';
+    if (!navigator.bluetooth) return;
+    try {
+      const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+      state.device = device.name || device.id || 'Unnamed device';
+      device.addEventListener('gattserverdisconnected', () => {
+        state.connected = false;
+        render();
+      });
+      try {
+        await device.gatt.connect();
+        state.connected = true;
+        state.note = `Connected to ${state.device}`;
+      } catch (err) {
+        state.connected = false;
+        state.note = `Selected ${state.device}, but it refused a GATT connection (${err.name}).`;
+      }
+    } catch (err) {
+      if (err && err.name === 'NotFoundError') {
+        state.note = 'No device chosen.';
+      } else if (err && err.name === 'SecurityError') {
+        state.note = 'Bluetooth needs an https page — try the GitHub Pages link.';
+      } else {
+        state.note = `Bluetooth: ${err && err.name ? err.name : 'request failed'}`;
+      }
+    }
+    render();
+  }
+
+  function render() {
+    if (!root) return;
+    const online = navigator.onLine;
+    const themeDark = prefs.theme === 'dark';
+
+    // Tray glyphs reflect real state.
+    networkBtn.innerHTML = online ? ICON.wifi : ICON.wifiOff;
+    networkBtn.title = online
+      ? `Network: connected${conn && conn.effectiveType ? ` (${labelForType(conn.effectiveType)})` : ''}`
+      : 'Network: offline';
+    networkBtn.classList.toggle('open', state.open && state.tab === 'network');
+    networkBtn.classList.toggle('off', !online);
+
+    bluetoothBtn.innerHTML = ICON.bluetooth;
+    bluetoothBtn.classList.toggle('open', state.open && state.tab === 'bluetooth');
+    bluetoothBtn.title =
+      state.bluetooth === 'unavailable'
+        ? 'Bluetooth: not exposed by this browser'
+        : state.connected
+          ? `Bluetooth: connected to ${state.device}`
+          : 'Bluetooth: open quick settings';
+
+    const batteryPct = state.battery ? Math.round(state.battery.level * 100) : null;
+
+    const tiles = [
+      tile('network', ICON[online ? 'wifi' : 'wifiOff'], online ? 'Wi-Fi' : 'Offline', networkSubtitle(), true),
+      tile(
+        'bluetooth',
+        ICON.bluetooth,
+        'Bluetooth',
+        state.bluetooth === 'unavailable'
+          ? 'Not available'
+          : state.connected
+            ? state.device
+            : state.bluetooth === 'blocked'
+              ? 'Turned off'
+              : 'Add device',
+        state.bluetooth !== 'unavailable',
+      ),
+      tile('theme', ICON.theme, 'Theme', themeDark ? 'Dark' : 'Light', true),
+    ];
+    if (batteryPct !== null) {
+      tiles.push(
+        tile(
+          'battery',
+          ICON.battery,
+          'Battery',
+          `${batteryPct}%${state.battery.charging ? ' · charging' : ''}`,
+          false,
+        ),
+      );
+    }
+
+    root.innerHTML = `
+      <div class="qs-head">
+        <span>Quick settings</span>
+        <button type="button" class="qs-close" data-qs="close" aria-label="Close">✕</button>
+      </div>
+      <div class="qs-grid">${tiles.join('')}</div>
+      <div class="qs-detail">${detailHtml()}</div>
+    `;
+
+    root.querySelectorAll('[data-qs]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const what = btn.getAttribute('data-qs');
+        if (what === 'close') return close();
+        if (what === 'bluetooth-add') return pickBluetoothDevice();
+        if (what === 'theme') {
+          savePrefs({ theme: themeDark ? 'light' : 'dark' });
+          applyAppearance();
+          return render();
+        }
+        if (what === 'network' || what === 'bluetooth' || what === 'battery') {
+          state.tab = what;
+          return render();
+        }
+      });
+    });
+  }
+
+  function tile(tab, icon, title, subtitle, interactive) {
+    const active = state.tab === tab;
+    return `<button type="button" class="qs-tile${active ? ' active' : ''}${interactive ? '' : ' passive'}"
+      data-qs="${interactive ? tab : tab}" title="${escapeHtml(subtitle)}">
+      <span class="qs-icon">${icon}</span>
+      <span class="qs-text"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></span>
+    </button>`;
+  }
+
+  function networkSubtitle() {
+    if (!navigator.onLine) return 'No connection';
+    if (conn && conn.effectiveType) return labelForType(conn.effectiveType);
+    return 'Connected';
+  }
+
+  function detailHtml() {
+    if (state.tab === 'network') {
+      const { facts } = networkFacts();
+      return `
+        <h4>Network</h4>
+        <dl class="qs-facts">${facts
+          .map((f) => `<dt>${escapeHtml(f.k)}</dt><dd>${escapeHtml(f.v)}</dd>`)
+          .join('')}</dl>
+        <p class="qs-note">
+          These figures are the real ones this page can read. A web page is not allowed to
+          list or join Wi-Fi networks — your Chromebook's own Wi-Fi menu does that.
+        </p>
+        ${state.note ? `<p class="qs-note strong">${escapeHtml(state.note)}</p>` : ''}
+        <button type="button" class="btn" data-qs="network">Refresh</button>`;
+    }
+
+    if (state.tab === 'bluetooth') {
+      const supported = state.bluetooth !== 'unavailable';
+      return `
+        <h4>Bluetooth</h4>
+        ${
+          supported
+            ? `<p class="qs-note">Pairing here uses the browser's real Bluetooth picker, the same
+               system dialog a website uses to talk to a device. Devices paired in ChromeOS
+               itself stay managed by ChromeOS.</p>
+               <button type="button" class="btn primary" data-qs="bluetooth-add">Add a device…</button>`
+            : `<p class="qs-note strong">This browser does not expose Web Bluetooth, so no Bluetooth
+               controls are possible from a page here. Chrome and Edge on a Chromebook normally do;
+               Firefox and Safari do not.</p>`
+        }
+        ${state.device ? `<p class="qs-note">Selected: <strong>${escapeHtml(state.device)}</strong>${state.connected ? ' — connected' : ''}</p>` : ''}
+        ${state.note ? `<p class="qs-note strong">${escapeHtml(state.note)}</p>` : ''}`;
+    }
+
+    if (state.tab === 'battery' && state.battery) {
+      const pct = Math.round(state.battery.level * 100);
+      return `
+        <h4>Battery</h4>
+        <dl class="qs-facts">
+          <dt>Level</dt><dd>${pct}%</dd>
+          <dt>State</dt><dd>${state.battery.charging ? 'Charging' : 'On battery'}</dd>
+        </dl>
+        <p class="qs-note">Reported by the Battery Status API, where the browser exposes it.</p>`;
+    }
+
+    return `
+      <h4>Appearance</h4>
+      <p class="qs-note">Switches the whole desktop between the light and dark Windows 11 palettes.</p>
+      <button type="button" class="btn primary" data-qs="theme">Switch to ${prefs.theme === 'dark' ? 'light' : 'dark'} mode</button>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  __exports.initTray = initTray;
+};
+
+__defs['main.js'] = function (__exports, __req) {
+  // Nimbus OS entry point. Every app registers itself on import.
+  __req('apps/browser.js');
+  __req('apps/brave.js');
+  __req('apps/notepad.js');
+  __req('apps/calculator.js');
+  __req('apps/terminal.js');
+  __req('apps/clock.js');
+  __req('apps/settings.js');
+  __req('store.js');
+  __req('apps/paint.js');
+  __req('apps/snake.js');
+  __req('apps/weather.js');
+  __req('apps/taskmanager.js');
+  const { initShell } = __req('shell.js');
+  const { initTray } = __req('tray.js');
+  const { prefs } = __req('state.js');
+  const { openApp } = __req('wm.js');
+
+  initShell();
+  initTray();
+
+  // One-link mode: if a streamed browser is configured, open it on startup.
+  const config = (typeof window !== 'undefined' && window.NIMBUS_CONFIG) || {};
+  if (prefs.streamUrl && config.autoOpenBrowser) {
+    setTimeout(() => openApp('brave'), 250);
+  }
+  console.info('%cNimbus OS', 'font-weight:700;color:#0067c0', '— type "help" in the Terminal app.');
+
+};
+
+  __req('main.js');
+})();
+
+</script>
+</body>
+</html>
